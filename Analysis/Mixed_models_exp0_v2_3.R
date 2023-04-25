@@ -10,7 +10,6 @@
 
 # Data processing and plotting
 library(magrittr)
-#library(plyr)
 library(tidyverse)
 library(lattice)
 library(gridExtra)
@@ -47,9 +46,8 @@ library(prediction)
 graphical_defaults <- par()
 options_defaults <- options() 
 
-setwd('G:/My Drive/Post-doc/Projetos/Action_foreperiod/Experimento_0_v2')
 
-source('G:/My Drive/Post-doc/Projetos/Action_foreperiod/Experimento_0_v2/Analysis/Prepare_data_exp0_v2_6.R')
+source('./Analysis/Prepare_data_exp0_v2_6.R')
 
 #================================== 0. Read data ================================
 

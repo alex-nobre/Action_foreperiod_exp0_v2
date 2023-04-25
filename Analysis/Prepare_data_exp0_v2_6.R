@@ -24,10 +24,10 @@ library(ggplot2)
 library(magrittr)
 library(dplyr)
 
-source("G:/My Drive/Post-doc/Projetos/Action_foreperiod/Experimento_0_v2/Analysis/helper_functions.R")
+source("./Analysis/helper_functions.R")
 
 # Read data
-data <- read_csv("G:/My Drive/Post-doc/Projetos/Action_foreperiod/Experimento_0_v2/Analysis/dataActionFPAll.csv")
+data <- read_csv("./Analysis/dataActionFPAll.csv")
 
 # Remove unnecessary columns
 data <- data %>%
@@ -204,7 +204,7 @@ summaryData2 <- data2 %>%
          scaledNumOneBackFPDiff = scale(numOneBackFPDiff)[,1],
          squaredScaledNumOneBackFPDiff = scaledNumOneBackFPDiff^2)
 
-write_csv(data, "data.csv")
-write_csv(data2, "data2.csv")
-write_csv(summaryData, "summaryData.csv")
-write_csv(summaryData2, "summaryData2.csv")
+#write_csv(data, "./Analysis/data.csv")
+#write_csv(data2, "./Analysis/data2.csv")
+#write_csv(summaryData, "./Analysis/summaryData.csv")
+#write_csv(summaryData2, "./Analysis/summaryData2.csv")
