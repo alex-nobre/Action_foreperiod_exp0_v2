@@ -12,9 +12,9 @@ import pandas as pd
 import glob
 import os
 
-os.chdir('E:/Post-doc_data/Sync/Experimento_0_v2/Pavlovia')
+filesPath = '.\Data'
 
-FileList=glob.glob('./*.csv')
+FileList=glob.glob(filesPath + '/*.csv')
 FileList.sort()
 
 nFiles=int(len(FileList))
@@ -26,7 +26,7 @@ for iFile,FileName in enumerate(FileList):
     dataActionFP = pd.read_csv(FileName)  
     
     #Get info for this file
-    ID=FileName[2:5]
+    ID=FileName[7:10]
          
     # Remove unnecessary columns
     dataActionFP = dataActionFP[['participant', 'date', 'Response.corr', 'blockCondition', 'block', 'orientation', 'foreperiod', 'corrAns', 'Response.rt', 'action_trigger.rt', 'Response.keys', 'counterbalance', 'extFixationDuration']]
