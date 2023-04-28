@@ -72,7 +72,7 @@ ggplot(data=summaryData,
   labs(title='RT by block and condition')
 
 # 1.1.3. RTs across blocks by counterbalancing order
-ggplot(data=summaryData,
+ggplot(data=summaryData2,
        aes(x=block,
            y=meanRT,
            color=counterbalance))+

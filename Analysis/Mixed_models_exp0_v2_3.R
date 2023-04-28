@@ -775,6 +775,95 @@ trimlogfplmmML <- lmer(logRT ~ 1 + condition + numForeperiod + condition:numFore
 
 anova(trimlogfplmmML, trimlogfplm)
 
+#============ Hierarchical entry ===============
+h_trimlogfplmm1 <- mixed(logRT ~ 1 + numForeperiod + (1 | ID),
+                         data=data2,
+                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+                         progress = TRUE,
+                         expand_re = TRUE,
+                         method = 'KR',
+                         REML=TRUE,
+                         return = "merMod")
+
+h_trimlogfplmm2 <- mixed(logRT ~ 1 + numForeperiod + numOneBackFP + (1 | ID),
+                         data=data2,
+                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+                         progress = TRUE,
+                         expand_re = TRUE,
+                         method =  'KR',
+                         REML=TRUE,
+                         return = "merMod",
+                         check_contrasts = FALSE)
+
+h_trimlogfplmm3 <- mixed(logRT ~ 1 + numForeperiod + numOneBackFP + numForeperiod:numOneBackFP + (1 | ID),
+                         data=data2,
+                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+                         progress = TRUE,
+                         expand_re = TRUE,
+                         method =  'KR',
+                         REML=TRUE,
+                         return = "merMod",
+                         check_contrasts = FALSE)
+
+h_trimlogfplmm4 <- mixed(logRT ~ 1 + numForeperiod + numOneBackFP + numForeperiod:numOneBackFP + condition + (1 | ID),
+                         data=data2,
+                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+                         progress = TRUE,
+                         expand_re = TRUE,
+                         method =  'KR',
+                         REML=TRUE,
+                         return = "merMod",
+                         check_contrasts = FALSE)
+
+h_trimlogfplmm5 <- mixed(logRT ~ 1 + numForeperiod + numOneBackFP + numForeperiod:numOneBackFP + condition + 
+                           condition:numForeperiod + (1 | ID),
+                         data=data2,
+                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+                         progress = TRUE,
+                         expand_re = TRUE,
+                         method =  'KR',
+                         REML=TRUE,
+                         return = "merMod",
+                         check_contrasts = FALSE)
+
+h_trimlogfplmm6 <- mixed(logRT ~ 1 + numForeperiod + numOneBackFP + numForeperiod:numOneBackFP + condition + 
+                           condition:numForeperiod + condition:numOneBackFP + (1 | ID),
+                         data=data2,
+                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+                         progress = TRUE,
+                         expand_re = TRUE,
+                         method =  'KR',
+                         REML=TRUE,
+                         return = "merMod",
+                         check_contrasts = FALSE)
+
+h_trimlogfplmm7 <- mixed(logRT ~ 1 + numForeperiod + numOneBackFP + numForeperiod:numOneBackFP + condition + 
+                           condition:numForeperiod + condition:numOneBackFP + condition:numOneBackFP:numForeperiod + (1 | ID),
+                         data=data2,
+                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+                         progress = TRUE,
+                         expand_re = TRUE,
+                         method =  'KR',
+                         REML=TRUE,
+                         return = "merMod",
+                         check_contrasts = FALSE)
+
+
+h_trimlogfplmm8 <- mixed(logRT ~ 1 + numForeperiod + numOneBackFP + numForeperiod:numOneBackFP + condition + 
+                           condition:numForeperiod + condition:numOneBackFP + condition:numOneBackFP:numForeperiod + (1 + condition | ID),
+                         data=data2,
+                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+                         progress = TRUE,
+                         expand_re = TRUE,
+                         method =  'KR',
+                         REML=TRUE,
+                         return = "merMod",
+                         check_contrasts = FALSE)
+
+anova(h_trimlogfplmm1, h_trimlogfplmm2, h_trimlogfplmm3, h_trimlogfplmm4, 
+      h_trimlogfplmm5, h_trimlogfplmm6, h_trimlogfplmm7, h_trimlogfplmm8)
+
+
 #==================== 3.3. Run model separately for action and external conditions ===================
 
 #======== 3.3.1. External ============#
@@ -1110,7 +1199,8 @@ b_one_back_fp <- brm(formula = logRT ~ numForeperiod * condition * numOneBackFP 
                      control = list(adapt_delta = 0.9),
                      save_all_pars = TRUE,
                      warmup = 2000,
-                     iter = 12000)
+                     iter = 12000,
+                     cores = -1)
 
 saveRDS(b_one_back_fp, "b_one_back_fp.rds")
 
@@ -1164,7 +1254,7 @@ b_one_back_fp_vagueprior <- brm(formula = logRT ~ numForeperiod * condition * nu
                                 control = list(adapt_delta = 0.9),
                                 warmup = 2000,
                                 iter = 12000,
-                                cores = 3)
+                                cores = -1)
 
 
 options(digits = 5)
