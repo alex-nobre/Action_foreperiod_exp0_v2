@@ -1384,8 +1384,8 @@ ggplot() +
 
 
 # Inverse gaussian distr
-b_one_back_fp_invgaus <- brm(formula = RT ~ numForeperiod * condition * numOneBackFP + 
-                               (1+numForeperiod*condition*numOneBackFP|ID),
+b_one_back_fp_invgaus <- brm(formula = RT ~ foreperiod * condition * oneBackFP + 
+                               (1+foreperiod*condition*oneBackFP|ID),
                              data = data2,
                              family = gaussian(),
                              prior = prior1,
@@ -1394,9 +1394,9 @@ b_one_back_fp_invgaus <- brm(formula = RT ~ numForeperiod * condition * numOneBa
                              iter = 10000)
 
 
-b_one_back_fp_null <- brm(formula = logRT ~ 1 + condition + numForeperiod + condition:numForeperiod + 
-                            numOneBackFP + numForeperiod:numOneBackFP + 
-                            (1 + condition + numForeperiod + numOneBackFP + 
+b_one_back_fp_null <- brm(formula = RT ~ 1 + condition + foreperiod + condition:foreperiod + 
+                            oneBackFP + foreperiod:oneBackFP + 
+                            (1 + condition + foreperiod + oneBackFP + 
                                condition:numForeperiod + numForeperiod:numOneBackFP| ID),
                           data = data2,
                           family = gaussian(),
@@ -1413,8 +1413,8 @@ bf_one_back_brm <- bayes_factor(b_one_back_fp, b_one_back_fp_null)
 
 
 #========== 5.1.2 Using a vague prior
-b_one_back_fp_vagueprior <- brm(formula = logRT ~ numForeperiod * condition * numOneBackFP + 
-                                  (1+numForeperiod*condition*numOneBackFP|ID),
+b_one_back_fp_vagueprior <- brm(formula = RT ~ foreperiod * condition * oneBackFP + 
+                                  (1+foreperiod*condition*oneBackFP|ID),
                                 data = data2,
                                 family = gaussian(),
                                 save_all_pars = TRUE,
