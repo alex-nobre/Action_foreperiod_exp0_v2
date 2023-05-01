@@ -598,6 +598,7 @@ trimlogfplmm4 <- mixed(logRT ~ 1 + condition + numForeperiod + condition:numFore
 summary(trimlogfplmm4)
 anova(trimlogfplmm4)
 
+# Pairwise comparisons
 emm_options(lmer.df = "satterthwaite", lmerTest.limit = 8000)
 Fp_by_Previous=emtrends(trimlogfplmm4, "oneBackFP", var = "numForeperiod")
 Fp_by_Previous
@@ -606,6 +607,47 @@ update(pairs(Fp_by_Previous), by = NULL, adjust = "holm")
 Fp_by_Previous=emtrends(trimlogfplmm4, c("condition", "oneBackFP"), var = "numForeperiod")
 Fp_by_Previous
 update(pairs(Fp_by_Previous), by = NULL, adjust = "none")
+
+# Both FP and FP n-1 as categorical
+# Visualize effects
+trimlogfplmm5 <- buildmer(logRT ~ foreperiod * condition * oneBackFP + 
+                            (1+foreperiod*condition*oneBackFP|ID), 
+                          data=data2,
+                          buildmerControl = list(crit='LRT',#ddf = "Satterthwaite",
+                                                 family=gaussian(link = 'identity'),
+                                                 calc.anova = TRUE))
+
+trimlogfplmm5 <- mixed(logRT ~ 1 + foreperiod + condition + foreperiod:condition + oneBackFP + 
+                         foreperiod:oneBackFP + condition:oneBackFP + foreperiod:condition:oneBackFP + 
+                         (1 + condition | ID),
+                       data=data2,
+                       control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+                       progress = TRUE,
+                       expand_re = TRUE,
+                       method =  'KR',
+                       REML=TRUE,
+                       return = "merMod",
+                       check_contrasts = FALSE)
+
+isSingular(trimlogfplmm5)
+
+formula(trimlogfplmm5)
+
+summary(trimlogfplmm5)
+
+anova(trimlogfplmm5)
+
+# Pairwise comparisons
+emt_FP_condition <- emmeans(trimlogfplmm5, "foreperiod", var = "condition")
+trimlogfplmm5emm <- emmeans(trimlogfplmm5, pairwise ~ condition|foreperiod)
+trimlogfplmm5emm <- emmeans(trimlogfplmm5, pairwise ~ condition|foreperiod*oneBackFP)
+
+trimlogfplmm5emmplot <- emmip(trimlogfplmm5, logRT ~ condition|foreperiod)
+
+trimlogfplmm5emm <- emmeans(trimlogfplmm5, pairwise ~ foreperiod*oneBackFP|condition)
+contrast(trimlogfplmm5emm[[1]], "poly")
+C_st <- contrast(trimlogfplmm5emm[[1]], interaction = c("poly", "eff", "consec"), by = NULL)
+C_st
 
 
 #================== 3.2. Compare dependent variables using random-effects structure ==================
@@ -1181,17 +1223,32 @@ trimlogfpgamma %>%
 #============================== 5. Bayesian mixed models using brms ============================
 #==============================================================================================#
 
-#======= 5.1. Models using effects from previous experiment as priors
+#========================== 5.1. For Log RT ==============================
+#======= 5.1.1 Models using effects from previous experiment as priors
 
 # Baseado no exp 0 v1
-prior1 <- c(set_prior('normal(2.52,0.01)', class = 'Intercept'),
-            set_prior("normal(0.00001, 0.000005)", class = "b", coef = "numForeperiod"),
-            set_prior("normal(0.005, 0.01)", class = "b", coef = "condition1"),
-            set_prior("normal(0.00005, 0.000005)", class = "b", coef = "numOneBackFP")
+prior1 <- c(set_prior('normal(2.55,0.009)', class = 'Intercept'),
+            set_prior("normal(-0.03, 0.002)", class = "b", coef = "foreperiod2"),
+            set_prior("normal(-0.02, 0.002)", class = "b", coef = "foreperiod3"),
+            set_prior("normal(0.01, 0.002)", class = "b", coef = "oneBackFP2"),
+            set_prior("normal(0.02, 0.002)", class = "b", coef = "oneBackFP2"),
+            set_prior("normal(0.01, 0.007)", class = "b", coef = "condition1"),
+            set_prior("normal(-0.02, 0.005)", class = "b", coef = "foreperiod2:oneBackFP2"),
+            set_prior("normal(-0.03, 0.005)", class = "b", coef = "foreperiod3:oneBackFP2"),
+            set_prior("normal(-0.03, 0.005)", class = "b", coef = "foreperiod2:oneBackFP3"),
+            set_prior("normal(-0.04, 0.005)", class = "b", coef = "foreperiod3:oneBackFP3"),
+            set_prior("normal(-0.01, 0.004)", class = "b", coef = "foreperiod2:condition1"),
+            set_prior("normal(-0.05, 0.004)", class = "b", coef = "foreperiod3:condition1"),
+            set_prior("normal(0.003, 0.004)", class = "b", coef = "oneBackFP2:condition1"),
+            set_prior("normal(0.002, 0.004)", class = "b", coef = "oneBackFP3:condition1"),
+            set_prior("normal(-0.02, 0.009)", class = "b", coef = "foreperiod2:oneBackFP2:condition1"),
+            set_prior("normal(-0.02, 0.009)", class = "b", coef = "foreperiod3:oneBackFP2:condition1"),
+            set_prior("normal(-0.02, 0.009)", class = "b", coef = "foreperiod2:oneBackFP3:condition1"),
+            set_prior("normal(-0.03, 0.009)", class = "b", coef = "foreperiod3:oneBackFP3:condition1")
 )
 
 # Gaussian distr
-b_one_back_fp <- brm(formula = logRT ~ numForeperiod * condition * numOneBackFP + 
+b_one_back_fp <- brm(formula = logRT ~ foreperiod * condition * oneBackFP + 
                        (1+numForeperiod*condition*numOneBackFP|ID),
                      data = data2,
                      family = gaussian(),
@@ -1217,7 +1274,7 @@ ggplot() +
 
 
 # Inverse gaussian distr
-b_one_back_fp_invgaus <- brm(formula = logRT ~ numForeperiod * condition * numOneBackFP + 
+b_one_back_fp_invgaus <- brm(formula = RT ~ numForeperiod * condition * numOneBackFP + 
                                (1+numForeperiod*condition*numOneBackFP|ID),
                              data = data2,
                              family = gaussian(),
@@ -1245,7 +1302,102 @@ b_one_back_fp_null <- brm(formula = logRT ~ 1 + condition + numForeperiod + cond
 bf_one_back_brm <- bayes_factor(b_one_back_fp, b_one_back_fp_null)
 
 
-#================================= 5.2 Using a vague prior ================================
+#========== 5.1.2 Using a vague prior
+b_one_back_fp_vagueprior <- brm(formula = logRT ~ numForeperiod * condition * numOneBackFP + 
+                                  (1+numForeperiod*condition*numOneBackFP|ID),
+                                data = data2,
+                                family = gaussian(),
+                                save_all_pars = TRUE,
+                                control = list(adapt_delta = 0.9),
+                                warmup = 2000,
+                                iter = 12000,
+                                cores = -1)
+
+
+options(digits = 5)
+summary(b_one_back_fp)
+options(options_defaults)
+
+#===================================== 5.2. For linear RT ======================================
+#======= 5.2.1 Models using effects from previous experiment as priors
+
+# Baseado no exp 0 v1
+prior2 <- c(set_prior('normal(368.41,8.34)', class = 'Intercept'),
+            set_prior("normal(-27.82, 1.78)", class = "b", coef = "foreperiod2"),
+            set_prior("normal(-24.96, 1.78)", class = "b", coef = "foreperiod3"),
+            set_prior("normal(8.57, 1.77)", class = "b", coef = "oneBackFP2"),
+            set_prior("normal(17.22, 1.77)", class = "b", coef = "oneBackFP2"),
+            set_prior("normal(12.6, 6.27)", class = "b", coef = "condition1"),
+            set_prior("normal(-14.39, 4.38)", class = "b", coef = "foreperiod2:oneBackFP2"),
+            set_prior("normal(-24.31, 4.37)", class = "b", coef = "foreperiod3:oneBackFP2"),
+            set_prior("normal(-26.36, 4.34)", class = "b", coef = "foreperiod2:oneBackFP3"),
+            set_prior("normal(-37.74, 4.37)", class = "b", coef = "foreperiod3:oneBackFP3"),
+            set_prior("normal(-15.27, 3.55)", class = "b", coef = "foreperiod2:condition1"),
+            set_prior("normal(-22.61, 3.56)", class = "b", coef = "foreperiod3:condition1"),
+            set_prior("normal(2.92, 3.55)", class = "b", coef = "oneBackFP2:condition1"),
+            set_prior("normal(1.45, 3.54)", class = "b", coef = "oneBackFP3:condition1"),
+            set_prior("normal(-12.49, 8.75)", class = "b", coef = "foreperiod2:oneBackFP2:condition1"),
+            set_prior("normal(-21.64, 8.74)", class = "b", coef = "foreperiod3:oneBackFP2:condition1"),
+            set_prior("normal(-20.01, 8.70)", class = "b", coef = "foreperiod2:oneBackFP3:condition1"),
+            set_prior("normal(-23.69, 8.75)", class = "b", coef = "foreperiod3:oneBackFP3:condition1")
+)
+
+# Gaussian distr
+b_one_back_fp <- brm(formula = RT ~ foreperiod * condition * oneBackFP + 
+                       (1+foreperiod*condition*oneBackFP|ID),
+                     data = data2,
+                     family = gaussian(),
+                     prior = prior1,
+                     control = list(adapt_delta = 0.9),
+                     save_all_pars = TRUE,
+                     warmup = 2000,
+                     iter = 12000,
+                     cores = -1)
+
+saveRDS(b_one_back_fp, "b_one_back_fp.rds")
+
+#b_one_back_fp <- readRDS('./Analysis/b_one_back_fp.rds')
+
+
+ggplot() +
+  stat_summary(fun='mean', geom='point', data=data2, aes(x=numForeperiod, y=logRT)) +
+  geom_point(data=fp_effect_df, aes(x=numForeperiod, y=fit), color='red') +
+  geom_line(data=fp_effect_df, aes(x=numForeperiod, y=fit), color='red') +
+  geom_ribbon(data=fp_effect_df, aes(x=numForeperiod, ymin=lower, ymax=upper), alpha=0.3) +
+  labs(x='Foreperiod (continuous)', y='logRT')
+
+
+
+# Inverse gaussian distr
+b_one_back_fp_invgaus <- brm(formula = RT ~ numForeperiod * condition * numOneBackFP + 
+                               (1+numForeperiod*condition*numOneBackFP|ID),
+                             data = data2,
+                             family = gaussian(),
+                             prior = prior1,
+                             save_all_pars = TRUE,
+                             warmup = 2000,
+                             iter = 10000)
+
+
+b_one_back_fp_null <- brm(formula = logRT ~ 1 + condition + numForeperiod + condition:numForeperiod + 
+                            numOneBackFP + numForeperiod:numOneBackFP + 
+                            (1 + condition + numForeperiod + numOneBackFP + 
+                               condition:numForeperiod + numForeperiod:numOneBackFP| ID),
+                          data = data2,
+                          family = gaussian(),
+                          prior = prior1,
+                          save_all_pars = TRUE,
+                          control = list(adapt_delta = 0.9),
+                          warmup = 2000,
+                          iter = 10000,
+                          file="b_one_back_fp_null.rds")
+
+
+
+bf_one_back_brm <- bayes_factor(b_one_back_fp, b_one_back_fp_null)
+
+
+#========== 5.1.2 Using a vague prior
 b_one_back_fp_vagueprior <- brm(formula = logRT ~ numForeperiod * condition * numOneBackFP + 
                                   (1+numForeperiod*condition*numOneBackFP|ID),
                                 data = data2,
