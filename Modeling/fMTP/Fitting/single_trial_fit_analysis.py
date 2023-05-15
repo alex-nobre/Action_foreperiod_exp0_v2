@@ -11,17 +11,22 @@ Parameters for sequential effects are plotted in separate panel for each foreper
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import itertools
-
 import os
 
-from fmtp import fMTP, FPexp, FPgonogo
+# Import for plotting
+import matplotlib.pyplot as plt
+
+# Import classes
+import sys
+sys.path.insert(0, './Modeling/fMTP/Fitting') # path to where classes are stored
+
+from fmtp import fMTP, FPexp
 
 def temp2RT (prepValue, a, b):
     return (a*prepValue + b)
 
-hazardResultsDF = pd.read_csv('./Models/fMTP/Fitting/fittingResults.csv')
+hazardResultsDF = pd.read_csv('./Modeling/fMTP/Fitting/fittingResults.csv')
 
 # Find min for SSE in each condition
 stCoefsAction = hazardResultsDF.loc[hazardResultsDF.groupby('ID').SSEAction.idxmin()].reset_index()
@@ -57,23 +62,26 @@ for i, panel in enumerate(ax):
 plt.show()    
 
 # Build plots with individual data and predictions
-FPs = np.arange(0.6, 1.8, 0.6)
+FPs = np.arange(1.0, 3.0, 0.6)
 distr = 'uni'
-exp = FPgonogo(FPs = FPs, distribution = distr, tr_per_block = 150, relax = 0)
+exp = FPexp(FPs = FPs, distribution = distr, tr_per_block = 150)
 
 
 # Plot by foreperiod only
 empData = pd.read_csv('./Analysis/dataActionFPAll.csv')
+empData.RT = empData.RT * 1000 # transform RT to ms
 empData = empData.groupby(['ID', 'foreperiod', 'condition'], as_index=False)[['RT']].mean()
 
 fig = plt.figure()
-ax = fig.subplots(5,7,sharey=False)
+ax = fig.subplots(4,6,sharey=False)
 ax = ax.ravel()
 
 titles = stCoefs.ID.tolist()
 
 for iSub, panel in enumerate(ax):
     sub = stCoefs.iloc[iSub,:]
+    
+    # Subset participant's data by condition
     empSub = empData[empData['ID']==titles[iSub]]
     empSubAction = empSub[empSub['condition']=='action']
     empSubExternal = empSub[empSub['condition']=='external']
@@ -82,6 +90,8 @@ for iSub, panel in enumerate(ax):
     kAction = sub['kAction']
     rAction = sub['rAction']
     cAction = sub['cAction']
+    
+    # Run model with current parameter values and simulate RTs for action condition
     fmtpAction=fMTP(rAction,cAction,kAction)
     state_discr_action, state_con_action = exp.run_exp(fmtpAction)
     state_discr_action=state_discr_action[1:]
@@ -92,6 +102,8 @@ for iSub, panel in enumerate(ax):
     kExternal = sub['kExternal']
     rExternal = sub['rExternal']
     cExternal = sub['cExternal']
+    
+    # Run model with current parameter values and simulate RTs for external condition
     fmtpExternal=fMTP(rExternal,cExternal,kExternal)
     state_discr_external, state_con_external = exp.run_exp(fmtpExternal)
     state_discr_external=state_discr_external[1:]
@@ -103,22 +115,22 @@ for iSub, panel in enumerate(ax):
     panel.plot(empSubAction.foreperiod, empSubAction.RT, '.-', color = 'blue')
     panel.plot(mean_state_external.FP, mean_state_external.RT,'.--', color = 'orange')
     panel.plot(empSubExternal.foreperiod, empSubExternal.RT, '.-', color = 'orange')
-    panel.set_title(titles[iSub])
     
 fig.suptitle('ID fits')
 
-figname='./Models/fMTP/Fitting/Plots/id_fit.png'
+figname='./Modeling/fMTP/Fitting/Plots/id_fit.png'
 plt.savefig(figname,format='png')
 plt.show()
     
 
 # Plot by sequential effects
 empData = pd.read_csv('./Analysis/dataActionFPAll.csv')
+empData.RT = empData.RT * 1000 # transform RT to ms
 empData = empData.groupby(['ID', 'foreperiod', 'oneBackFP', 'condition'], as_index=False)[['RT']].mean()
 
-fig = plt.figure(constrained_layout=True)
-subfigs=fig.subfigures(5,7)
-subfigsCoords=list(itertools.product([0,1,2,3,4],[0,1,2,3,4,5,6]))
+fig = plt.figure(constrained_layout=True, figsize = (15,10))
+subfigs=fig.subfigures(4,6)
+subfigsCoords=list(itertools.product([0,1,2,3],[0,1,2,3,4,5]))
 
 #subfigs = subfigs.ravel()
 titles = stCoefs.ID.tolist()
@@ -134,6 +146,8 @@ for iSub in range(len(titles)):
     kAction = sub['kAction']
     rAction = sub['rAction']
     cAction = sub['cAction']
+    
+    # Run model with current parameter values and simulate RTs for action condition
     fmtpAction=fMTP(rAction,cAction,kAction)
     state_discr_action, state_con_action = exp.run_exp(fmtpAction)
     state_discr_action=state_discr_action[1:]
@@ -144,6 +158,8 @@ for iSub in range(len(titles)):
     kExternal = sub['kExternal']
     rExternal = sub['rExternal']
     cExternal = sub['cExternal']
+    
+    # Run model with current parameter values and simulate RTs for external condition
     fmtpExternal=fMTP(rExternal,cExternal,kExternal)
     state_discr_external, state_con_external = exp.run_exp(fmtpExternal)
     state_discr_external=state_discr_external[1:]
@@ -151,7 +167,7 @@ for iSub in range(len(titles)):
     mean_state_external['RT'] = temp2RT(mean_state_external.prep, sub['a SSE External'], sub['b SSE External'])
     
     # Plot on single panel
-    ax=subfigs[subfigsCoords[iSub]].subplots(1,3,sharey=True)
+    ax=subfigs[subfigsCoords[iSub]].subplots(1,4,sharey=True)
     
     for idx, iFP in enumerate(np.unique(mean_state_action.FPn_1)):
         FP = round(iFP, 2)
@@ -171,8 +187,10 @@ for iSub in range(len(titles)):
 
 fig.suptitle('Sequential effects')
 
-figname='.Models/fMTP/Fitting/Plots/seq_effects_id_fit.png'
-plt.savefig(figname,format='png')
+figname='./Modeling/fMTP/Fitting/Plots/SSE_seq_effects_id_fit.png'
+plt.savefig(figname,format='png', bbox_inches = 'tight')
+
+plt.show()
 
 #========================================================================================================================================#
 # Based on RMSE
@@ -228,9 +246,9 @@ for i, panel in enumerate(ax):
     panel.set_title(titles[i])
     
 # Build plots with individual data and predictions
-FPs = np.arange(0.6, 1.8, 0.6)
+FPs = np.arange(1.0, 3.0, 0.6)
 distr = 'uni'
-exp = FPgonogo(FPs = FPs, distribution = distr, tr_per_block = 150, relax = 0)
+exp = FPexp(FPs = FPs, distribution = distr, tr_per_block = 150)
 
 
 # Plot by foreperiod only
@@ -278,7 +296,7 @@ for iSub, panel in enumerate(ax):
     
 fig.suptitle('ID fits')
 
-figname='./ModelS/fMTP/Fitting/Plots/1-corr_id_fit.png'
+figname='./Modeling/fMTP/Fitting/Plots/1-corr_id_fit.png'
 plt.savefig(figname,format='png')
     
 
@@ -341,7 +359,7 @@ for iSub in range(len(titles)):
 
 fig.suptitle('Sequential effects')
 
-figname='.Models/fMTP/Fitting/Plots/seq_effects_id_fit.png'
+figname='.Modeling/fMTP/Fitting/Plots/seq_effects_id_fit.png'
 plt.savefig(figname,format='png')
 
 #========================================================================================================================================#

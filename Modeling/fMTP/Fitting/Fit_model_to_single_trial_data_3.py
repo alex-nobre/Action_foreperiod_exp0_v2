@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 
 # Import classes
 import sys
-sys.path.insert(0, './Models/fMTP/Fitting')
+sys.path.insert(0, './Modeling/fMTP/Fitting') # path to where classes are stored
 
 from fmtp_single_trial import fMTP, FPexp
 from hazard import fMTPhz
@@ -75,7 +75,7 @@ trialIndexExternal = [index for ID in trialIndexExternal for index in ID]
 empDataExternal['trial']=trialIndexExternal
 
 # Generate experiment from model
-FPs = np.arange(1.0, 2.8, 0.6)
+FPs = np.arange(1.0, 3.0, 0.6)
 distr = 'uni'
 #exp = FPexp(FPs = FPs, distribution = distr, tr_per_block = rowsByCond)
 
