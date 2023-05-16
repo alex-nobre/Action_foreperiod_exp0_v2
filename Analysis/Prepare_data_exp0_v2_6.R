@@ -101,7 +101,10 @@ data <- data %>%
   filter(!is.na(oneBackFP), !is.na(twoBackFP))
 #filter(!is.na(oneBackFP))
 
-# Keep only go trials with correct responses to analyze RT
+# Save data with error trials to assess accuracy
+dataAll <- data
+
+# Keep only trials with correct responses to analyze RT
 data <- data %>%
   filter(!is.na(RT), Acc == 1)
 
@@ -109,6 +112,10 @@ data <- data %>%
 data$numLogFP <- log10(data$numForeperiod)
 data$logFP <- as.factor(data$numLogFP)
 data$logOneBackFP <- log10(data$numOneBackFP)
+
+dataAll$numLogFP <- log10(dataAll$numForeperiod)
+dataAll$logFP <- as.factor(dataAll$numLogFP)
+dataAll$logOneBackFP <- log10(dataAll$numOneBackFP)
 
 # Remove extreme values
 data <- data %>%
@@ -153,6 +160,15 @@ data2 <- data2 %>%
   mutate(scaledNumOneBackFPDiff = scale(numOneBackFPDiff)[,1]) %>%
   ungroup()
 data2$squaredScaledNumOneBackFPDiff = data2$scaledNumOneBackFPDiff^2
+
+dataAll$scaledNumForeperiod <- scale(dataAll$numForeperiod)[,1]
+dataAll$squaredScaledNumForeperiod <- dataAll$scaledNumForeperiod^2
+dataAll$scaledNumOneBackFP <- scale(dataAll$numOneBackFP)[,1]
+dataAll <- dataAll %>%
+  group_by(ID, block) %>%
+  mutate(scaledNumOneBackFPDiff = scale(numOneBackFPDiff)[,1]) %>%
+  ungroup()
+dataAll$squaredScaledNumOneBackFPDiff = dataAll$scaledNumOneBackFPDiff^2
 
 
 # Average data
@@ -203,6 +219,21 @@ summaryData2 <- data2 %>%
          scaledNumOneBackFP = scale(numOneBackFP)[,1],
          scaledNumOneBackFPDiff = scale(numOneBackFPDiff)[,1],
          squaredScaledNumOneBackFPDiff = scaledNumOneBackFPDiff^2)
+
+
+summaryDataAll <- dataAll %>%
+  group_by(ID,foreperiod,condition,
+           oneBackFP) %>%
+  summarise(meanRT = mean(RT),
+            meanAcc = mean(Acc),
+            meanSeqEff = mean(oneBackEffect)) %>%
+  ungroup() %>%
+  mutate(numForeperiod = as.numeric(as.character(foreperiod)),
+         numOneBackFP = as.numeric(as.character(oneBackFP))) %>%
+  mutate(squaredNumForeperiod = numForeperiod^2,
+         scaledNumForeperiod = scale(numForeperiod)[,1],
+         squaredScaledNumForeperiod = scaledNumForeperiod^2,
+         scaledNumOneBackFP = scale(numOneBackFP)[,1])
 
 #write_csv(data, "./Analysis/data.csv")
 #write_csv(data2, "./Analysis/data2.csv")

@@ -631,7 +631,7 @@ ggplot(data = summaryData2,
            y = meanRT,
            color = oneBackFP)) +
   stat_summary(fun = "mean", geom = "point", size = 1.5) +
-  stat_summary(fun = "mean", geom = "line", size = 0.8, aes(group = oneBackFP)) +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.8, aes(group = oneBackFP)) +
   #stat_summary(fun.data = "mean_cl_boot", size = 0.8, width = 0.2, geom = "errorbar") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -641,6 +641,17 @@ ggplot(data = summaryData2,
   facet_wrap(~condition) +
   scale_color_manual(values = c('blue','orange','green', 'pink'))
 
+# Differences by condition
+ggplot(data = summaryData2,
+       aes(x = oneBackFP,
+           y = meanSeqEff,
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point", size = 1.5) +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.8, aes(group = condition)) +
+  stat_summary(fun.data = "mean_cl_boot", size = 0.8, width = 0.2, geom = "errorbar") +
+  facet_wrap(~ foreperiod) +
+  scale_color_manual(values = c("orange", "blue"))
+
 
 # 2.2.1. Anova for FP n-1
 seqEffAnova <- aov_ez(id = "ID",
@@ -648,7 +659,7 @@ seqEffAnova <- aov_ez(id = "ID",
                   data = summaryData2,
                   within = c("foreperiod", "condition", "oneBackFP"))
 
-seqEffAnova <- aov_ez(id = "ID",
+logSeqEffAnova <- aov_ez(id = "ID",
                       dv = "meanLogRT",
                       data = summaryData2,
                       within = c("foreperiod", "condition", "oneBackFP"))
@@ -665,13 +676,53 @@ logseqEffregression <- lm(meanRT~logFP*logoneBackFP*condition,
                           data=summaryData) 
 anova(logseqEffregression)
 
-# 2.2.3. Anova for FP n-2
+# 2.2.3. FP n-2
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = meanRT,
+           color = twoBackFP)) +
+  stat_summary(fun = "mean", geom = "point", size = 1.5) +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.8, aes(group = twoBackFP)) +
+  #stat_summary(fun.data = "mean_cl_boot", size = 0.8, width = 0.2, geom = "errorbar") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5))) +
+  facet_wrap(~condition) +
+  scale_color_manual(values = c('blue','orange','green', 'pink'))
+
+twoBackAnova <- aov_ez(id = "ID",
+                      dv = "meanRT",
+                      data = summaryData2,
+                      within = c("foreperiod", "condition", "twoBackFP"))
+
+nice(twoBackAnova)
+
 ntworegression <- lm(meanRT ~ foreperiod * oneBackFP * twoBackFP, 
                      data = summaryData)
 summary(ntworegression)
 anova(ntworegression)
 Anova(ntworegression, type = "II")
 
+# Accuracy
+ggplot(data = summaryDataAll,
+       aes(x = foreperiod,
+           y = meanAcc,
+           color = oneBackFP)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", aes(group = oneBackFP)) +
+  facet_wrap(~ condition)
+
+ggplot(data = summaryDataAll,
+       aes(x = foreperiod,
+           y = meanAcc,
+           color = oneBackFP)) +
+  geom_jitter()
+
+ggplot(data = summaryDataAll) +
+  geom_histogram(aes(x = meanAcc)) +
+  facet_grid(foreperiod ~ condition)
 # ============ 3.2.2. Fit models separately for external condition (safety check) ====================
 seqEffAnovaExt <- aov_ez(id = "ID",
                      dv = "meanLogRT",
@@ -895,9 +946,9 @@ fpAnova_ea <- aov_ez(id = "ID",
                      within = c("foreperiod", "condition"))
 
 
-#====================================================================================================
+#===================================================================================================#
 #=================================== 6. Analysis with scaled predictors =============================
-#====================================================================================================
+#===================================================================================================#
 
 fpregression <- lm(meanRT ~ condition * foreperiod, data = summaryData)
 summary(fpregression)

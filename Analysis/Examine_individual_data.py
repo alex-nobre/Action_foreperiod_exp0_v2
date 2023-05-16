@@ -8,6 +8,7 @@ Created on Mon Aug 22 15:23:42 2022
 import pandas as pd
 import os
 import seaborn as sns
+import matplotlib.pyplot as plt
 
 subFileName = input('Enter File Name:\n')
 subFile = './Data/' + subFileName
@@ -62,5 +63,5 @@ summaryData=subData.groupby(['foreperiod','condition','oneBackFP','prevOri','blo
 
 summaryPlot=sns.pointplot(x="foreperiod", y="RT",
                           data=summaryData)
-
-
+                          
+plt.show()
