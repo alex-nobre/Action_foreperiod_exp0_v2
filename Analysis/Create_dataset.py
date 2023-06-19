@@ -57,4 +57,4 @@ for iFile,FileName in enumerate(FileList):
        
     dataActionFPAll=pd.concat([dataActionFPAll, dataActionFP], axis=0)    
 
-dataActionFPAll.to_csv('G:/My Drive/Post-doc/Projetos/Action_foreperiod/Experimento_0_v2/Analysis/'+'dataActionFPAll.csv')
+dataActionFPAll.to_csv('./Analysis/'+'dataActionFPAll.csv')

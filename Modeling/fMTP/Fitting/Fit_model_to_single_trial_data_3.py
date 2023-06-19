@@ -62,6 +62,7 @@ empData.RT=empData.RT*1000
 # Create columns for z-score of RT in each data frame
 empData['zRT'] = stats.zscore(empData.RT, nan_policy='omit')
 
+# List of trial indices for single trial
 rowsByCond = int((len(empData)/len(empData.ID.unique()))/2)
 
 empDataAction = empData.loc[empData.condition=='action'].reset_index()
@@ -80,9 +81,9 @@ distr = 'uni'
 #exp = FPexp(FPs = FPs, distribution = distr, tr_per_block = rowsByCond)
 
 # Parameters for simulations
-kList=[i for i in range(1,11)]
-rList=np.linspace(-4,-1,num=10)
-cList=np.linspace(0,0.0003,num=10)
+kList= [i for i in range(1,15)]
+rList= np.linspace(-10,-0.1,num=15)#np.linspace(-4,-1,num=10)
+cList= np.linspace(0,0.0021,num=15)#np.linspace(0,0.0003,num=10)
 
 startVals=[4., 375.]
 
@@ -173,7 +174,7 @@ for i, iID in enumerate(IDList):
                                    sseAction.x[0], sseAction.x[1], sseAction.fun, RsseAction, 
                                    rmseAction.x[0], rmseAction.x[1], rmseAction.fun, RrmseAction,
                                    antiCorrAction.x[0], antiCorrAction.x[1], antiCorrAction.fun, RantiCorrAction,
-                                   sseAction.x[0], sseExternal.x[1], sseExternal.fun, RsseExternal, 
+                                   sseExternal.x[0], sseExternal.x[1], sseExternal.fun, RsseExternal, 
                                    rmseExternal.x[0], rmseExternal.x[1], rmseExternal.fun, RrmseExternal,
                                    antiCorrExternal.x[0], antiCorrExternal.x[1], antiCorrExternal.fun, RantiCorrExternal)
                 
@@ -190,5 +191,5 @@ hazardResultsDF = pd.DataFrame(hazardResults,
                                        'a RMSE External', 'b RMSE External', 'RMSE_External', 'R2_RMSE_External', 
                                        'a 1-corr External', 'b 1-corr External', 'One_minus_corr_External', 'R2_1-corr_External'])
 
-hazardResultsDF.to_csv('./Models/fMTP/Fitting/'+'fittingResults.csv')                            
+hazardResultsDF.to_csv('./Modeling/fMTP/Fitting/'+'fittingResults.csv')                            
                             

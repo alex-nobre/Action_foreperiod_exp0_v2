@@ -142,7 +142,7 @@ for ik in range(len(kList)):
                                sseAction.x[0], sseAction.x[1], sseAction.fun, RsseAction, 
                                rmseAction.x[0], rmseAction.x[1], rmseAction.fun, RrmseAction,
                                antiCorrAction.x[0], antiCorrAction.x[1], antiCorrAction.fun, RantiCorrAction,
-                               sseAction.x[0], sseExternal.x[1], sseExternal.fun, RsseExternal, 
+                               sseExternal.x[0], sseExternal.x[1], sseExternal.fun, RsseExternal, 
                                rmseExternal.x[0], rmseExternal.x[1], rmseExternal.fun, RrmseExternal,
                                antiCorrExternal.x[0], antiCorrExternal.x[1], antiCorrExternal.fun, RantiCorrExternal)
                                
@@ -170,7 +170,7 @@ for ik in range(len(kList)):
                                sseAction.x[0], sseAction.x[1], sseAction.fun, RsseAction, 
                                rmseAction.x[0], rmseAction.x[1], rmseAction.fun, RrmseAction,
                                antiCorrAction.x[0], antiCorrAction.x[1], antiCorrAction.fun, RantiCorrAction,
-                               sseAction.x[0], sseExternal.x[1], sseExternal.fun, RsseExternal, 
+                               sseExternal.x[0], sseExternal.x[1], sseExternal.fun, RsseExternal, 
                                rmseExternal.x[0], rmseExternal.x[1], rmseExternal.fun, RrmseExternal,
                                antiCorrExternal.x[0], antiCorrExternal.x[1], antiCorrExternal.fun, RantiCorrExternal)
             

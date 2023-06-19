@@ -489,7 +489,7 @@ qplot(resid(fplmm4),
 
 #================================= 2.2. Find random effects structure ==========================
 
-#=========================== FP and FP n-1 as numerical ============================
+#=========================== 2.2.1. FP and FP n-1 as numerical ============================
 trimlogfplmm1 <- buildmer(logRT ~ numForeperiod * condition * numOneBackFP + 
                             (1+numForeperiod*condition*numOneBackFP|ID), 
                           data=data2,
@@ -551,7 +551,7 @@ cor(fitted(trimlogfplmm2), data2$logRT)^2
 cor(fitted(trimlogfplmm3), data2$logRT)^2
 
 
-#===================== Using FP n-1 as categorical (for emm comparisons) ===================
+#===================== 2.2.2. Using FP n-1 as categorical (for emm comparisons) ===================
 trimlogfplmm2 <- buildmer(logRT ~ numForeperiod * condition * oneBackFP + 
                             (1+numForeperiod*condition*oneBackFP|ID), 
                           data=data2,
@@ -564,7 +564,7 @@ isSingular(trimlogfplmm2)
 formula(trimlogfplmm2)
 
 
-#==========================  Both FP and FP n-1 as categorical ===============================
+#==========================  2.2.3. Both FP and FP n-1 as categorical ===============================
 trimlogfplmm3 <- buildmer(logRT ~ foreperiod * condition * oneBackFP + 
                             (1+foreperiod*condition*oneBackFP|ID), 
                           data=data2,
@@ -579,7 +579,7 @@ formula(trimlogfplmm3)
 #==================================== 3. Model assessment ======================================
 #==============================================================================================#
 
-#=============================== FP and FP n-1 as numerical ==================================
+#=============================== 3.1. FP and FP n-1 as numerical ==================================
 trimlogfplmm1 <- mixed(logRT ~ 1 + condition + numForeperiod + condition:numForeperiod + 
                          numOneBackFP + numForeperiod:numOneBackFP + condition:numOneBackFP + condition:numForeperiod:numOneBackFP +
                          (1 + condition | ID),
@@ -607,7 +607,7 @@ ggplot() +
   labs(x='Foreperiod (continuous)', y='logRT')
 
 
-#====================== Using FP n-1 as categorical for emm comparisons ==========================
+#====================== 3.2. Using FP n-1 as categorical for emm comparisons ==========================
 trimlogfplmm2 <- mixed(logRT ~ 1 + condition + numForeperiod + condition:numForeperiod + 
                          oneBackFP + numForeperiod:oneBackFP + condition:oneBackFP + condition:oneBackFP:numForeperiod +
                          (1 + condition | ID),
@@ -632,7 +632,9 @@ Fp_by_Previous=emtrends(trimlogfplmm2, c("condition", "oneBackFP"), var = "numFo
 Fp_by_Previous
 update(pairs(Fp_by_Previous), by = NULL, adjust = "none")
 
-#================================== Both FP and FP n-1 as categorical ===================================
+#========================= 3.3. Both FP and FP n-1 as categorical ===================================
+
+#=============== 3.3.1. using logRT =========================
 trimlogfplmm3 <- mixed(logRT ~ 1 + foreperiod + condition + foreperiod:condition + oneBackFP + 
                          foreperiod:oneBackFP + condition:oneBackFP + foreperiod:condition:oneBackFP + 
                          (1 + condition | ID),
@@ -649,7 +651,7 @@ summary(trimlogfplmm3)
 
 anova(trimlogfplmm3)
 
-# Separately by FP (estimates consecutive differences)
+# 3.3.1.1. Pairwise comparisons by FP (estimates consecutive differences)
 emmip(trimlogfplmm3, condition ~ oneBackFP|foreperiod, CIs = TRUE)
 
 trimlogfplmm3emm <- emmeans(trimlogfplmm3, ~ oneBackFP * condition|foreperiod)
@@ -661,7 +663,7 @@ trimlogfplmm3emm <- emmeans(trimlogfplmm3, pairwise ~ condition*oneBackFP|forepe
 contrast(trimlogfplmm3emm[[1]], interaction = c("consec"), by = c("foreperiod", "oneBackFP"), adjust = "none")
 contrast(trimlogfplmm3emm[[1]], interaction = c("consec"), by = c("foreperiod", "condition"), adjust = "none")
 
-# Separately by FP n-1 (estimate slopes)
+# 3.3.1.2. Pairwise comparisons by by FP n-1 (estimate slopes)
 emmip(trimlogfplmm3, condition ~ foreperiod|oneBackFP, CIs = TRUE)
 
 trimlogfplmm3emm <- emmeans(trimlogfplmm3, ~ foreperiod * condition|oneBackFP)
@@ -669,7 +671,8 @@ trimlogfplmm3emm <- emmeans(trimlogfplmm3, ~ foreperiod * condition|oneBackFP)
 trimlogfplmm3emm <- emmeans(trimlogfplmm3, pairwise ~ foreperiod * condition|oneBackFP)
 contrast(trimlogfplmm3emm[[1]], interaction = c("poly", "consec"), by = "oneBackFP", adjust = "mvt")
 
-# Using RT instead of logRT
+
+#============= 3.3.2. Using RT instead of logRT ================
 trimfplmm3 <- mixed(RT ~ 1 + foreperiod + condition + foreperiod:condition + oneBackFP + 
                          foreperiod:oneBackFP + condition:oneBackFP + foreperiod:condition:oneBackFP + 
                          (1 + condition | ID),
@@ -685,15 +688,26 @@ trimfplmm3 <- mixed(RT ~ 1 + foreperiod + condition + foreperiod:condition + one
 isSingular(trimfplmm3)
 summary(trimfplmm3)
 
-# Separately by FP (estimates consecutive differences)
-emmip(trimfplmm3, condition ~ oneBackFP|foreperiod, CIs = TRUE)
+# 3.3.2.1. Pairwise comparisons by FP (estimates consecutive differences)
+emmip(trimfplmm3, condition ~ oneBackFP|foreperiod, CIs = TRUE, style = "factor",
+      xlab = "FP n-1") +
+  labs(title = "RT pairwise comparisons") +
+  theme(plot.title = element_text(size = 15, hjust = 0.5),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  scale_color_manual(values = c("orange", "blue"))
+ggsave("./Analysis/Plots/mixed_model_pairwise.png",
+       width = 8.5,
+       height = 5.7)
 
 trimfplmm3emm <- emmeans(trimfplmm3, ~ oneBackFP * condition|foreperiod)
 trimfplmm3emm <- emmeans(trimfplmm3, pairwise ~ oneBackFP * condition|foreperiod)
 
 contrast(trimfplmm3emm[[1]], interaction = c("consec", "consec"), by = "foreperiod", adjust = "mvt")
 
-# Separately by FP n-1 (estimate slopes)
+
+# 3.3.2.2. Pairwise comparisons by FP n-1 (estimate slopes)
 emmip(trimfplmm3, condition ~ foreperiod|oneBackFP, CIs = TRUE)
 
 trimfplmm3emm <- emmeans(trimfplmm3, ~ foreperiod * condition|oneBackFP)
@@ -701,7 +715,7 @@ trimfplmm3emm <- emmeans(trimfplmm3, pairwise ~ foreperiod * condition|oneBackFP
 
 contrast(trimfplmm3emm[[1]], interaction = c("poly", "consec"), by = "oneBackFP", adjust = "mvt")
 
-# Separately for each level of FP n
+# 3.3.2.3. Separate models for each level of FP n
 seq1000 <- mixed(RT ~ 1 + oneBackFP + condition + oneBackFP:condition +
                    (1 + condition | ID),
                  data=filter(data2, foreperiod == '1000'),
@@ -769,7 +783,7 @@ anova(seq2800)
 
 emmeans(seq2800, pairwise ~ condition|foreperiod)
 
-#================== 3.2. Compare dependent variables using random-effects structure ==================
+#================== 3.4. Compare dependent variables using random-effects structure ==================
 fplmm1 <- mixed(formula = RT ~ 1 + condition + numForeperiod + condition:numForeperiod + 
                   numOneBackFP + numForeperiod:numOneBackFP + condition:numOneBackFP + 
                   (1 + condition | ID),
@@ -936,7 +950,7 @@ trimlogfplmmML <- lmer(logRT ~ 1 + condition + numForeperiod + condition:numFore
 
 anova(trimlogfplmmML, trimlogfplm)
 
-#============ Hierarchical entry ===============
+#============ 3.5. Hierarchical entry ===============
 h_trimlogfplmm1 <- mixed(logRT ~ 1 + numForeperiod + (1 | ID),
                          data=data2,
                          control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
