@@ -208,10 +208,10 @@ plt.show()
 # Build dataset in long format for plotting
 stCoefsAction = hazardResultsDF.loc[hazardResultsDF.groupby('ID').SSEAction.idxmin()].reset_index()
 stCoefsAction = stCoefsAction[['ID', 'k', 'r', 'c', 'a SSE Action', 'b SSE Action', 'SSEAction']]
-stCoefsAction['condition'] = pd.Series(['Action'] * len(stCoefsAction))
+stCoefsAction['condition'] = pd.Series(['action'] * len(stCoefsAction))
 stCoefsExternal = hazardResultsDF.loc[hazardResultsDF.groupby('ID').SSEExternal.idxmin()].reset_index()
 stCoefsExternal = stCoefsExternal[['ID', 'k', 'r', 'c', 'a SSE External', 'b SSE External', 'SSEExternal']]
-stCoefsExternal['condition'] = pd.Series(['External'] * len(stCoefsExternal))
+stCoefsExternal['condition'] = pd.Series(['external'] * len(stCoefsExternal))
 
 stCoefsLong = pd.DataFrame(pd.concat([stCoefsAction.rename(columns = {'ID':'ID', 'condition':'condition', 'k':'k', 'r':'r', 'c':'c', 
                                                                    'a SSE Action':'aSSE', 'b SSE Action':'bSSE', 
@@ -226,6 +226,7 @@ stCoefsLong = pd.DataFrame(pd.concat([stCoefsAction.rename(columns = {'ID':'ID',
 paramFig = plt.figure()
 ax = paramFig.subplots(2, 2)
 
+# Point plots
 sns.stripplot(x = 'condition', y = 'k', data = stCoefsLong, jitter = 0.1, orient = 'v', ax = ax[0,0])
 sns.pointplot(x = 'condition', y = 'k', data = stCoefsLong, ax = ax[0,0])
 
@@ -238,7 +239,24 @@ sns.pointplot(x = 'condition', y = 'c', data = stCoefsLong, ax = ax[1,0])
 
 plt.show()
 
+# Histograms
+paramFig = plt.figure()
+ax = paramFig.subplots(3, 2)
+
+# Point plots
+sns.histplot(x = "k", data = stCoefsLong[stCoefsLong.condition == "action"], ax = ax[0, 0])
+sns.histplot(x = "k", data = stCoefsLong[stCoefsLong.condition == "external"], ax = ax[0, 1])
+
+sns.histplot(x = "r", data = stCoefsLong[stCoefsLong.condition == "action"], ax = ax[1, 0])
+sns.histplot(x = "r", data = stCoefsLong[stCoefsLong.condition == "external"], ax = ax[1, 1])
+
+sns.histplot(x = "c", data = stCoefsLong[stCoefsLong.condition == "action"], ax = ax[2, 0])
+sns.histplot(x = "c", data = stCoefsLong[stCoefsLong.condition == "external"], ax = ax[2, 1])
+
+
+plt.show()
+
 # Paired samples t-test
-stats.ttest_rel(stCoefs.kAction, stCoefs.kExternal)
-stats.ttest_rel(stCoefs.rAction, stCoefs.rExternal)
-stats.ttest_rel(stCoefs.cAction, stCoefs.cExternal)
+stats.wilcoxon(stCoefs.kAction, stCoefs.kExternal)
+stats.wilcoxon(stCoefs.rAction, stCoefs.rExternal)
+stats.wilcoxon(stCoefs.cAction, stCoefs.cExternal)
