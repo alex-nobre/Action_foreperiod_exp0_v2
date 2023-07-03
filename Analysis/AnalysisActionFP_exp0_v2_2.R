@@ -451,7 +451,7 @@ contrasts(summaryDataAll$oneBackFP) <- contr.treatment(4)-matrix(rep(1/4,12),nco
 #==================== 3.1. FP x RT by condition ======================
 #================ 3.1.1. RT =================
 
-# FP and condition by participante
+# FP and condition by participant
 fp_cond_part <- ggplot(data = summaryData2,
                              aes(x = foreperiod,
                                  y = meanRT,
