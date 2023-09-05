@@ -1,22 +1,35 @@
-,participant,errorRateAll,errorRateLeft,errorRateRight,trimmedRTRate
-0,Jackson Alexandre Lemos,0.625,0.0,1.25,0.0
-1,L,1.5625,3.125,0.0,0.0
-2,Maurício Bernardes Closs,4.0625,1.875,6.25,0.0
-3,Renata,1.875,0.625,3.125,0.0
-4,Diego,1.5625,1.25,1.875,0.0
-5,Fabiano Alberto Boiani,0.9375,0.625,1.25,0.0
-6,Jassana,5.625,5.0,6.25,0.0
-7,Juciéli,5.0,4.375,5.625,0.0
-8,Renata Teixeira Ferreira da Silva,0.625,0.625,0.625,0.0
-9,Kleiton,0.3125,0.0,0.625,0.0
-10,Julio Moraes Lermen,0.3125,0.0,0.625,0.0
-11,Regilane,3.75,3.75,3.75,0.0
-12,Naomy Marques,0.3125,0.0,0.625,0.0
-13,debora ,0.9375,0.0,1.875,0.0
-14,Nathalia Pozzan Rippel,2.1875,1.875,2.5,0.0
-15,Janaína Lemos,3.75,3.75,3.75,0.0
-16,Fernando Ferrary,1.25,1.25,1.25,0.0
-17,Leticia Mikaeli,1.25,1.25,1.25,0.0
-18,Emanuelle Segal Morales,6.875000000000001,8.125,5.625,0.0
-19,Felipe Diego Toro Hernández,8.4375,7.5,9.375,0.0
-20,29.0,3.4375000000000004,2.5,4.375,0.0
+,participant,errorRateAll,errorRateLeft,errorRateRight,errorRateAction,errorRateExternal,trimmedRTRate
+0,Jackson Alexandre Lemos,0.625,0.0,1.25,0.0,1.25,0.0
+1,L,1.5625,3.125,0.0,1.875,1.25,0.0
+2,Maurício Bernardes Closs,4.0625,1.875,6.25,5.625,2.5,0.0
+3,Renata,1.875,0.625,3.125,3.125,0.625,0.0
+4,Diego,1.5625,1.25,1.875,2.5,0.625,0.0
+5,Fabiano Alberto Boiani,0.9375,0.625,1.25,1.25,0.625,0.0
+6,Jassana,5.625,5.0,6.25,3.75,7.5,0.0
+7,Juciéli,5.0,4.375,5.625,8.125,1.875,0.0
+8,Renata Teixeira Ferreira da Silva,0.625,0.625,0.625,1.25,0.0,0.0
+9,Kleiton,0.3125,0.0,0.625,0.625,0.0,0.0
+10,Julio Moraes Lermen,0.3125,0.0,0.625,0.0,0.625,0.0
+11,Regilane,3.75,3.75,3.75,4.375,3.125,0.0
+12,Naomy Marques,0.3125,0.0,0.625,0.625,0.0,0.0
+13,debora ,0.9375,0.0,1.875,1.25,0.625,0.0
+14,thiago tomazetti casotti,12.1875,5.625,18.75,10.625,13.750000000000002,0.0
+15,Nathalia Pozzan Rippel,2.1875,1.875,2.5,3.125,1.25,0.0
+16,Janaína Lemos,3.75,3.75,3.75,1.875,5.625,0.0
+17,Douglas Charqueiro,19.0625,17.5,20.625,16.875,21.25,0.0
+18,Fernando Ferrary,1.25,1.25,1.25,1.875,0.625,0.0
+19,Leticia Mikaeli,1.25,1.25,1.25,0.625,1.875,0.0
+20,Emanuelle Segal Morales,6.875000000000001,8.125,5.625,7.5,6.25,0.0
+21,Felipe Diego Toro Hernández,8.4375,7.5,9.375,11.25,5.625,0.0
+22,29.0,3.4375000000000004,2.5,4.375,5.0,1.875,0.0
+23,Rodrigo Almeria Ragio,0.625,0.0,1.25,0.625,0.625,0.0
+24,thiago bonifácio,0.625,0.625,0.625,0.625,0.625,0.0
+25,Larissa Coelho da Fonseca,1.875,2.5,1.25,0.625,3.125,0.0
+26,Daniel Del Sent Soares,3.4375000000000004,3.75,3.125,4.375,2.5,0.0
+27,,4.375,5.0,3.75,5.625,3.125,0.0
+28,BERNARDO NERY BELLEZA,3.75,4.375,3.125,3.125,4.375,0.0
+29,Paolo,0.9375,0.625,1.25,0.625,1.25,0.0
+30,fernando,1.875,2.5,1.25,1.25,2.5,0.0
+31,Juliana Felix de Melo,11.25,11.25,11.25,10.625,11.875,0.0
+32,Helena Pincolini Pereira ,4.0625,3.75,4.375,4.375,3.75,0.0
+33,Tiago de Oliveira Magalhães,1.5625,0.625,2.5,2.5,0.625,0.0

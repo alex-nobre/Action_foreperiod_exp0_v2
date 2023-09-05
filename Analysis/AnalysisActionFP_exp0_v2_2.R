@@ -44,7 +44,7 @@ ggplot(data=summaryData,
        aes(x=block,
            y=meanRT))+
   stat_summary(fun='mean',geom='point')+
-  stat_summary(fun='mean',geom='line',size=1,aes(group=1))+
+  stat_summary(fun='mean',geom='line',linewidth=1,aes(group=1))+
   stat_summary(fun.data='mean_cl_boot',width=0.2,geom='errorbar')+
   theme(plot.title=element_text(size = rel(2), hjust = 0.5),
         panel.grid.major=element_blank(),
@@ -148,7 +148,17 @@ ggplot(data=filter(data,condition=='external'),
            y=RT,
            color=foreperiod))+
   geom_point() +
+  theme(axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.8)),
+        strip.text = element_text(size = rel(1.8)),
+        legend.text = element_text(size = rel(1.5)),
+        legend.title = element_text(size = rel(1.8))) +
+  labs(x = "External fixation duration",
+       y = "RT") +
   facet_wrap(~foreperiod)
+ggsave("./Analysis/Plots/extfixduration.png",
+       width = 13.4,
+       height = 10)
 
 # Check for influence of latency of action key press on RT
 ggplot(data=filter(data,condition=='action'),
@@ -156,7 +166,17 @@ ggplot(data=filter(data,condition=='action'),
            y=RT,
            color=foreperiod))+
   geom_point() +
+  theme(axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.8)),
+        strip.text = element_text(size = rel(1.8)),
+        legend.text = element_text(size = rel(1.5)),
+        legend.title = element_text(size = rel(1.8))) +
+  labs(x = "Action trigger delay",
+       y = "RT") +
   facet_wrap(~foreperiod)
+ggsave("./Analysis/Plots/actiontrigpress.png",
+       width = 13.4,
+       height = 10)
 
 # Plot data by foreperiod only to ascertain that there is an FP effect
 ggplot(data = summaryData,
@@ -452,7 +472,7 @@ contrasts(summaryDataAll$oneBackFP) <- contr.treatment(4)-matrix(rep(1/4,12),nco
 #================ 3.1.1. RT =================
 
 # FP and condition by participant
-fp_cond_part <- ggplot(data = summaryData2,
+rt_by_fp_cond_part <- ggplot(data = summaryData2,
                              aes(x = foreperiod,
                                  y = meanRT,
                                  color = condition)) +
@@ -469,6 +489,10 @@ fp_cond_part <- ggplot(data = summaryData2,
         panel.background = element_blank()) +
   scale_color_manual(values = c("orange","blue")) +
   facet_wrap(~ ID)
+ggsave("./Analysis/Plots/rt_by_fp_cond_part.png",
+       rt_by_fp_cond_part,
+       width = 6.7,
+       height = 5)
 
 
 # FP and condition
@@ -673,8 +697,8 @@ ggplot(data = summaryData2,
            y = meanRT,
            color=oneBackFP)) +
   stat_summary(fun = "mean", geom = "point", size = 1.5) +
-  stat_summary(fun = "mean", geom = "line", size = 0.8, aes(group=oneBackFP)) +
-  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.1, size = 0.8) +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.8, aes(group=oneBackFP)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.1, linewidth = 0.8) +
   labs(x = "Foreperiod",
        y = "Mean RT",
        color = "FP n -1") +
@@ -866,8 +890,9 @@ summary(logfpAnovaExt2, correction = 'none')
 summary(seqEffAnovaExt2, correction = 'none')
 
 #=================== 3.3 Sequential effects with difference between current and previous FP ============
+# Using value of difference as variable
 ggplot(data = summaryData2,
-       aes(x = numForeperiod,
+       aes(x = foreperiod,
            y = meanRT,
            color = oneBackFPDiff)) +
   stat_summary(fun = "mean", geom = "point") +
@@ -896,8 +921,23 @@ ggplot(data = summaryData2,
         axis.title = element_text(size = rel(1.5))) +
   scale_color_manual(values = c("orange","blue"))
 
+# Using prevFPLonger
+ggplot(data = summaryData2,
+       aes(x = prevFPLonger,
+           y = meanRT,
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5))) +
+  scale_color_manual(values = c("orange","blue")) 
 
-# 2.2.2. Lm with difference between the durations of FPn and FPn-1 as regressor
+
+# lm with difference between the durations of FPn and FPn-1 as regressor
 fpDiffRegression <- lm(meanRT ~ foreperiod * condition * oneBackFPDiff,
                        data = summaryData)
 summary(fpDiffRegression)
@@ -930,6 +970,8 @@ logfpAnova2 <- aov_ez(id = "ID",
 # Error because there are empty cells
 
 #=============================== 3.4 Orientation ===================================
+
+# RT by alternation vs repetition
 ggplot(data = summaryData2,
        aes(x = foreperiod,
            y = meanRT,
@@ -942,6 +984,30 @@ ggplot(data = summaryData2,
         panel.background = element_blank()) +
   scale_color_manual(values = c("lightgoldenrod1","indianred2"))
 
+# RT by alternation vs repetition and condition
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = meanRT,
+           color = seqOri)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = seqOri)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.8)),
+        legend.text = element_text(size = rel(1.5)),
+        legend.title = element_text(size = rel(1.8)),
+        strip.text = element_text(size = rel(1.8))) +
+  facet_wrap(~ condition) +
+  scale_color_manual(values = c("lightgoldenrod1","indianred2"))
+ggsave("./Analysis/Plots/RT_by_repxalt_condition.png",
+       width= 13.4,
+       height = 10)
+
+
+# Previous orientation vs left/right
 ggplot(data = summaryData2,
        aes(x = orientation,
            y = meanRT,
@@ -967,8 +1033,35 @@ ggplot(data = summaryData2,
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),
         axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.5))) +
+        axis.title = element_text(size = rel(1.8)),
+        legend.text = element_text(size = rel(1.5)),
+        legend.title = element_text(size = rel(1.8))) +
   scale_color_manual(values = c("deeppink3","chartreuse3"))
+ggsave("./Analysis/Plots/RT_by_orientation.png",
+       width= 13.4,
+       height = 10)
+
+# Orientation vs condition
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = meanRT,
+           color = orientation)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = orientation)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.8)),
+        legend.text = element_text(size = rel(1.5)),
+        legend.title = element_text(size = rel(1.8)),
+        strip.text = element_text(size = rel(1.8))) +
+  facet_wrap(~condition) +
+  scale_color_manual(values = c("deeppink3","chartreuse3"))
+ggsave("./Analysis/Plots/RT_by_orientation_condition.png",
+       width= 13.4,
+       height = 10)
 
 # No apparent difference
 oriAnova <- aov_ez(id = 'ID',
@@ -1627,3 +1720,581 @@ seqEffAnovares3 <- aov_ez(id = 'ID',
                           within = c('condition'))
 
 summary(seqEffAnovares4)
+
+#================================= 8. Two-stage regression ================================
+id_list <- unique(data2$ID)
+
+#================= 8.1 FP x FP n-1 ========================
+
+#================= 8.1.1. External ========================
+# FP as numerical 
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ numForeperiod * numOneBackFP, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ numForeperiod * numOneBackFP, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # fp
+t.test(params_action[,3]) # fp n-1
+t.test(params_action[,4]) # fp x fp n-1
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # fp
+t.test(params_external[,3]) # fp n-1
+t.test(params_external[,4]) # fp x fp n-1
+
+# FP as categorical
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ foreperiod * numOneBackFP, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ foreperiod * numOneBackFP, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # fp 2
+t.test(params_action[,3]) # fp 3
+t.test(params_action[,4]) # fp 4
+t.test(params_action[,5]) # fp n-1
+t.test(params_action[,6]) # fp 2 x fp n-1
+t.test(params_action[,7]) # fp 3 x fp n-1
+t.test(params_action[,8]) # fp 4 x fp n-1
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # fp 2
+t.test(params_external[,3]) # fp 3
+t.test(params_external[,4]) # fp 4
+t.test(params_external[,5]) # fp n-1
+t.test(params_external[,6]) # fp 2 x fp n-1
+t.test(params_external[,7]) # fp 3 x fp n-1
+t.test(params_external[,8]) # fp 4 x fp n-1
+
+
+# logFP as numerical 
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ numLogFP * numOneBackFP, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ numLogFP * numOneBackFP, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # logfp
+t.test(params_action[,3]) # fp n-1
+t.test(params_action[,4]) # logfp x fp n-1
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # logfp
+t.test(params_external[,3]) # fp n-1
+t.test(params_external[,4]) # logfp x fp n-1
+
+
+# logFP as categorical
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ logFP * numOneBackFP, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ logFP * numOneBackFP, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # logfp 2
+t.test(params_action[,3]) # logfp 3
+t.test(params_action[,4]) # logfp 4
+t.test(params_action[,5]) # fp n-1
+t.test(params_action[,6]) # logfp 2 x fp n-1
+t.test(params_action[,7]) # logfp 3 x fp n-1
+t.test(params_action[,8]) # logfp 4 x fp n-1
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # logfp 2
+t.test(params_external[,3]) # logfp 3
+t.test(params_external[,4]) # logfp 4
+t.test(params_external[,5]) # fp n-1
+t.test(params_external[,6]) # logfp 2 x fp n-1
+t.test(params_external[,7]) # logfp 3 x fp n-1
+t.test(params_external[,8]) # logfp 4 x fp n-1
+
+
+# FP as numerical using FP only 
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ numForeperiod, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ numForeperiod, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # fp
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # fp
+
+
+
+# FP as categorical using FP only
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ foreperiod, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ foreperiod, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # fp 2
+t.test(params_action[,3]) # fp 3
+t.test(params_action[,4]) # fp 4
+
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # fp 2
+t.test(params_external[,3]) # fp 3
+t.test(params_external[,4]) # fp 4
+
+
+# logFP as numerical using logFP only
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ numLogFP, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ numLogFP, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # logfp
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # logfp
+
+# logFP as categorical
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ logFP, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ logFP, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # logfp 2
+t.test(params_action[,3]) # logfp 3
+t.test(params_action[,4]) # logfp 4
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # logfp 2
+t.test(params_external[,3]) # logfp 3
+t.test(params_external[,4]) # logfp 4
+
+
+#========= 8.1.2. Action =============
+
+#=============================== 8.2. FP x FP diff ====================================
+
+#========= 8.2.1. External ============
+
+# FP as numerical 
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ numForeperiod * numOneBackFPDiff, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ numForeperiod * numOneBackFPDiff, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # fp
+t.test(params_action[,3]) # fp diff
+t.test(params_action[,4]) # fp x fp diff
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # fp
+t.test(params_external[,3]) # fp diff
+t.test(params_external[,4]) # fp x fp diff
+
+
+# FP as categorical
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ foreperiod * numOneBackFPDiff, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ foreperiod * numOneBackFPDiff, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # fp 2
+t.test(params_action[,3]) # fp 3
+t.test(params_action[,4]) # fp 4
+t.test(params_action[,5]) # fp diff
+t.test(params_action[,6]) # fp 2 x fp diff
+t.test(params_action[,7]) # fp 3 x fp diff
+t.test(params_action[,8]) # fp 4 x fp diff
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # fp 2
+t.test(params_external[,3]) # fp 3
+t.test(params_external[,4]) # fp 4
+t.test(params_external[,5]) # fp diff
+t.test(params_external[,6]) # fp 2 x fp diff
+t.test(params_external[,7]) # fp 3 x fp diff
+t.test(params_external[,8]) # fp 4 x fp diff
+
+
+# logFP as numerical 
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ numLogFP * numOneBackFPDiff, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ numLogFP * numOneBackFPDiff, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # logfp
+t.test(params_action[,3]) # fp diff
+t.test(params_action[,4]) # logfp x fp diff
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # logfp
+t.test(params_external[,3]) # fp diff
+t.test(params_external[,4]) # logfp x fp diff
+
+
+# logFP as categorical
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ logFP * numOneBackFPDiff, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ logFP * numOneBackFPDiff, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # logfp 2
+t.test(params_action[,3]) # logfp 3
+t.test(params_action[,4]) # logfp 4
+t.test(params_action[,5]) # fp diff
+t.test(params_action[,6]) # logfp 2 x fp diff
+t.test(params_action[,7]) # logfp 3 x fp diff
+t.test(params_action[,8]) # logfp 4 x fp diff
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # logfp 2
+t.test(params_external[,3]) # logfp 3
+t.test(params_external[,4]) # logfp 4
+t.test(params_external[,5]) # fp diff
+t.test(params_external[,6]) # logfp 2 x fp diff
+t.test(params_external[,7]) # logfp 3 x fp diff
+t.test(params_external[,8]) # logfp 4 x fp diff
+
+
+# FP as numerical without interaction 
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ numForeperiod + numOneBackFPDiff, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ numForeperiod + numOneBackFPDiff, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # fp
+t.test(params_action[,3]) # fp diff
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # fp
+t.test(params_external[,3]) # fp diff
+
+# FP as categorical without interaction
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ foreperiod + numOneBackFPDiff, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ foreperiod + numOneBackFPDiff, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # fp 2
+t.test(params_action[,3]) # fp 3
+t.test(params_action[,4]) # fp 4
+t.test(params_action[,5]) # fp diff
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # fp 2
+t.test(params_external[,3]) # fp 3
+t.test(params_external[,4]) # fp 4
+t.test(params_external[,5]) # fp diff
+
+
+# logFP as numerical without interaction   
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ numLogFP + numOneBackFPDiff, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ numLogFP + numOneBackFPDiff, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # logfp
+t.test(params_action[,3]) # fp diff
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # logfp
+t.test(params_external[,3]) # fp diff
+
+
+# logFP as categorical without interaction
+params_action <- list(length = length(id_list))
+params_external <- list(length = length(id_list))
+
+for(id in 1:length(id_list)) {
+  
+  sub <- id_list[id]
+  sub_data <- data2[data2$ID==sub,]
+  
+  model_action <- lm(logRT ~ logFP + numOneBackFPDiff, data = sub_data[sub_data$condition == 'action',])
+  model_external <- lm(logRT ~ logFP + numOneBackFPDiff, data = sub_data[sub_data$condition == 'external', ])
+  
+  params_action[[id]] <- model_action$coefficients
+  params_external[[id]] <- model_external$coefficients
+}
+
+params_action <- matrix(unlist(params_action), nrow = length(id_list), 
+                        ncol = length(model_action$coefficients), byrow = T)
+params_external <- matrix(unlist(params_external), nrow = length(id_list), 
+                          ncol = length(model_external$coefficients), byrow = T)
+
+t.test(params_action[,1]) # intercept
+t.test(params_action[,2]) # logfp 2
+t.test(params_action[,3]) # logfp 3
+t.test(params_action[,4]) # logfp 4
+t.test(params_action[,5]) # fp diff
+
+t.test(params_external[,1]) # intercept
+t.test(params_external[,2]) # logfp 2
+t.test(params_external[,3]) # logfp 3
+t.test(params_external[,4]) # logfp 4
+t.test(params_external[,5]) # fp diff
+
+#==========================================================================================#
+#===================== 3. Plots for between-experiments comparisons ========================
+#==========================================================================================#
+extrFPData <- summaryData2 %>%
+  filter(foreperiod %in% c("1000", "2800")) %>%
+  mutate(foreperiod = fct_relevel(foreperiod, c("1000", "2800")))
+
+rt_extr_fps_part <- ggplot(data = extrFPData,
+                              aes(x = foreperiod,
+                                  y = meanRT,
+                                  color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.8, aes(group = condition)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", linewidth = 0.8, width = 0.2) +
+  labs(title = "RT by condition",
+       x = "Foreperiod",
+       y = "Mean RT",
+       color = "Condition") +
+  theme(plot.title = element_text(size = 14, hjust = 0.5),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.2)),
+        axis.title = element_text(size = rel(1.2))) +
+  scale_color_manual(values = c("orange", "blue"), labels = c("External", "Action")) +
+  facet_wrap(~ ID)
+
+ggsave("./Analysis/Plots/rt_extr_fps_part.png",
+       rt_extr_fps_part,
+       width = 6.7,
+       height = 5)

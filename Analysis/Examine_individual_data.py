@@ -25,11 +25,7 @@ subData=subData.rename(columns={'Response.rt':'RT'})
 
 # Create columns for n-1 and n-2 foreperiods by block
 subData['oneBackFP'] = subData.groupby(['block'])['foreperiod'].shift(1)
-subData['twoBackFP'] = subData.groupby(['block'])['foreperiod'].shift(2)
 
-# Create columns for n-1 and n-2 trial types
-subData['prevOri'] = subData.groupby(['block'])['orientation'].shift(1)
-subData['prevOri'] = subData.groupby(['block'])['orientation'].shift(2)
 
 # Remove practice trials and lines with nan values
 subData = subData[(subData['condition'] != 'practice') & (subData['condition'].notnull())]
@@ -58,7 +54,7 @@ subData = subData[(subData['RT'] < 1) & (subData['RT'] > 0.1)]
 print('clean: ' + str(len(subData)))
 
 
-summaryData=subData.groupby(['foreperiod','condition','oneBackFP','prevOri','block','counterbalance'],
+summaryData=subData.groupby(['foreperiod','condition','oneBackFP','block','counterbalance'],
                            as_index=False)[['RT','Response.corr']].mean()
 
 summaryPlot=sns.pointplot(x="foreperiod", y="RT",

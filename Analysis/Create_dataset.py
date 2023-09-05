@@ -8,12 +8,16 @@ Created on Sep 30 18:24:00 2022
 @author: Alexandre de Pontes Nobre
 """
 
+# Import libraries
 import pandas as pd
 import glob
 import os
 
+# File paths
 filesPath = '.\Data'
+gDrivePath = 'G:/My Drive/Post-doc/Projetos/Action_foreperiod/Experimento_0_v2/Analysis/'
 
+# Find files
 FileList=glob.glob(filesPath + '/*.csv')
 FileList.sort()
 
@@ -57,4 +61,10 @@ for iFile,FileName in enumerate(FileList):
        
     dataActionFPAll=pd.concat([dataActionFPAll, dataActionFP], axis=0)    
 
+# Save to analysis directory
 dataActionFPAll.to_csv('./Analysis/'+'dataActionFPAll.csv')
+
+# Save to google drive for colab use
+dataActionFPAll.to_csv(gDrivePath +'dataActionFPAll.csv')
+
+

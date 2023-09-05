@@ -1,10 +1,9 @@
-#================================================================================================================#
-# Changes:
+#==========================================================================================#
+# Fit the same mixed models as in Mixed_models.R, but using RT in s instead of 
+# ms to improve convergeability
 
-# To choose the dependent variable, we fit models using only random intercepts instead of the full
-# random-effects structure, as suggested by Salet et al. (2022) in their model structure Rmd
-# Removed old code in settings contrasts section
-#================================================================================================================#
+# For this we use centered and scaled numerical predictors
+#==========================================================================================#
 
 # Load packages
 
@@ -14,6 +13,7 @@ library(tidyverse)
 library(lattice)
 library(gridExtra)
 library(data.table)
+library(knitr)
 
 # Simple models
 library(car)
@@ -36,7 +36,6 @@ library(BayesFactor)
 library(effects)
 library(ggeffects)
 library(performance)
-library(knitr)
 library(kableExtra)
 library(sjPlot)
 library(prediction)
@@ -52,7 +51,7 @@ emm_options(lmer.df = "satterthwaite", lmerTest.limit = 12000)
 
 #================================== 0. Read data ================================
 # Create dataset
-source('./Analysis/Prepare_data_exp0_v2_6.R')
+source('./Analysis/Prepare_data_exp0_v2_seconds.R')
 
 # Set contrasts
 contrasts(data$foreperiod) <- contr.treatment(4)-matrix(rep(1/4,12),ncol=3)
@@ -76,7 +75,7 @@ contrasts(data2$oneBackFP) <- contr.treatment(4)-matrix(rep(1/4,12),ncol=3)
 hist_resid <- function(M,ptitle='Residuals') {
   d <- data.frame(resid=residuals(M)) 
   d  %>% ggplot(aes(x=resid)) + 
-    geom_histogram(aes(y=..density..), bins=75, color='black', fill='grey') + 
+    geom_histogram(aes(y= after_stat(density)), bins=75, color='black', fill='grey') + 
     geom_density(color='darkred') + 
     ggtitle(ptitle) -> pl
   return(pl)
@@ -94,141 +93,18 @@ fitstats = function(M,mname='M') {
   return(r2tab)
 }
 
-# Plot RT by FP by participant and model using complete pooling 
-FPfitAll=lm(meanRT ~ foreperiod,
-            data=summaryData)
-
-fit.params=tidy(FPfitAll)
-
-summary(FPfitAll)
-
-
-ggplot(data=summaryData,
-       aes(x=foreperiod,
-           y=meanRT)) +
-  stat_summary(fun="mean", geom="point", size=1.5)+
-  geom_abline(intercept=fit.params$estimate[1],
-              slope=fit.params$estimate[2],
-              color="blue")+
-  facet_wrap(~ ID, ncol=6)
-
-
-# Plot RT by FP by participant and model using individual data (no pooling)
-dataGroupedByRT <- summaryData %>% 
-  group_by(ID,foreperiod) %>% 
-  summarise(meanRT=mean(meanRT)) %>%
-  ungroup() %>%
-  mutate(numForeperiod=as.numeric(as.character(foreperiod)))
-
-data.no_pooling <- dataGroupedByRT %>%
-  select(-foreperiod) %>%
-  group_by(ID) %>%
-  nest(data = c(numForeperiod, meanRT)) %>%
-  mutate(fit = map(data, ~ lm(meanRT ~ numForeperiod, data = .)),
-         params = map(fit, tidy)) %>%
-  ungroup() %>%
-  unnest(c(params)) %>%
-  select(ID, term, estimate) %>%
-  complete(ID, term, fill = list(estimate = 0)) %>%
-  pivot_wider(names_from = term,
-              values_from = estimate) %>% 
-  clean_names()
-
-
-data.no_pooling <- data.no_pooling %>%
-  rename(ID=id,
-         numForeperiod=num_foreperiod)
-
-
-ggplot(data = dataGroupedByRT,
-       aes(x = numForeperiod, y = meanRT)) + 
-  geom_abline(data = data.no_pooling,
-              aes(intercept = intercept,
-                  slope = numForeperiod),
-              color = "blue") +
-  geom_point() +
-  facet_wrap(~ID, ncol=6) + 
-  scale_x_continuous(breaks = 0:4 * 2) +
-  theme(strip.text = element_text(size = 12),
-        axis.text.y = element_text(size = 12))
-
-fp_no_pooling <- data.no_pooling$numForeperiod
-
-# Compare results to see how much they differ
-data_grouped_by_fp <- data %>%
-  group_by(ID, foreperiod) %>%
-  summarise(meanRT=mean(meanRT)) %>%
-  ungroup()
-
-fit_partial_pooling <- lmer(formula = RT ~ numForeperiod + 
-                              (1 + numForeperiod|ID),
-                            data = data)
-
-data_partial_pooling <- fit_partial_pooling %>%
-  augment() %>%
-  select(ID, numFore, RT, .fitted) %>%
-  rename(fitted=.fitted)
-
-#================ 2.2. FP n-1 ==================
-dataGroupedByRT <- summaryData %>% 
-  group_by(ID,oneBackFP) %>% 
-  summarise(meanRT=mean(meanRT)) %>%
-  ungroup() %>%
-  mutate(numOneBackFP = as.numeric(as.character(oneBackFP)))
-
-data.no_pooling <- dataGroupedByRT %>%
-  select(-oneBackFP) %>%
-  group_by(ID) %>%
-  nest(data = c(numOneBackFP, meanRT)) %>%
-  mutate(fit = map(data, ~ lm(meanRT ~ numOneBackFP, data = .)),
-         params = map(fit, tidy)) %>%
-  ungroup() %>%
-  unnest(c(params)) %>%
-  select(ID, term, estimate) %>%
-  complete(ID, term, fill = list(estimate = 0)) %>%
-  pivot_wider(names_from = term,
-              values_from = estimate) %>% 
-  clean_names()
-
-
-data.no_pooling <- data.no_pooling %>%
-  rename(ID=id,
-         numOneBackFP=num_one_back_fp)
-
-
-ggplot(data = dataGroupedByRT,
-       aes(x = numOneBackFP, y = meanRT)) + 
-  geom_abline(data = data.no_pooling,
-              aes(intercept = intercept,
-                  slope = numOneBackFP),
-              color = "blue") +
-  geom_point() +
-  facet_wrap(~ID, ncol=6) + 
-  scale_x_continuous(breaks = 0:4 * 2) +
-  theme(strip.text = element_text(size = 12),
-        axis.text.y = element_text(size = 12))
-
 
 #==========================================================================================#
 #====================================== 2. Prepare model ====================================
 #==========================================================================================#
 
 #=========================== 2.1. Choose dependent variable =============================
-# We use the strategy of keeping it maximal to find a model that converges and progressively
-# remove terms, one of the strategies recommended to avoid overfitting:
-# https://rdrr.io/cran/lme4/man/isSingular.html
-
-#  Trying to fit the model using foreperiod and FPn-1 as factors results
-# in R hanging during execution; for this reason, we use them as
-# numerical variables
+# We use buildmer for this
 
 # To choose the data transformation that leads to the optimal random effects structure, we fit models including only 
 # random intercepts and compare R2 and residuals
 
-# Fit models with RT and inverse RT without trimming
-options(scipen = 999)
-
-fplmm1 <- mixed(formula = RT ~ numForeperiod*condition*numOneBackFP + 
+fplmm1 <- mixed(formula = RT ~ scaledNumForeperiod * condition * oneBackFP + 
                   (1|ID),
                 data = data,
                 control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
@@ -238,11 +114,9 @@ fplmm1 <- mixed(formula = RT ~ numForeperiod*condition*numOneBackFP +
                 REML=TRUE,
                 return = "merMod")
 
-summary(fplmm1)
-
 
 # Now we run the same model with inverse RT and logRT as outcomes
-invfplmm1 <- mixed(formula = invRT ~ numForeperiod*condition*numOneBackFP + 
+invfplmm1 <- mixed(formula = invRT ~ scaledNumForeperiod * condition * oneBackFP + 
                      (1|ID),
                    data = data,
                    control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
@@ -252,7 +126,7 @@ invfplmm1 <- mixed(formula = invRT ~ numForeperiod*condition*numOneBackFP +
                    REML=TRUE,
                    return = "merMod")
 
-logfplmm1 <- mixed(formula = logRT ~ numForeperiod*condition*numOneBackFP + 
+logfplmm1 <- mixed(formula = logRT ~ scaledNumForeperiod * condition * oneBackFP + 
                      (1|ID),
                    data = data,
                    control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
@@ -310,7 +184,7 @@ grid.arrange(hist_resid(fplmm1, 'RT'),
 # All appear to be relatively normally distributed, with a slight positive skew
 
 # Fit models with RT and inverse RT without trimming
-trimfplmm1 <- mixed(formula = RT ~ numForeperiod*condition*numOneBackFP + 
+trimfplmm1 <- mixed(formula = RT ~ scaledNumForeperiod * condition * oneBackFP + 
                       (1|ID),
                     data = data2,
                     control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
@@ -322,7 +196,7 @@ trimfplmm1 <- mixed(formula = RT ~ numForeperiod*condition*numOneBackFP +
 
 
 # Now we run the same model with inverse RT and logRT as outcomes
-triminvfplmm1 <- mixed(formula = invRT ~ numForeperiod*condition*numOneBackFP + 
+triminvfplmm1 <- mixed(formula = invRT ~ scaledNumForeperiod * condition * oneBackFP + 
                          (1|ID),
                        data = data2,
                        control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
@@ -333,7 +207,7 @@ triminvfplmm1 <- mixed(formula = invRT ~ numForeperiod*condition*numOneBackFP +
                        return = "merMod")
 
 # Now we run the same model with inverse RT and logRT as outcomes
-trimlogfplmm1 <- mixed(formula = logRT ~ numForeperiod*condition*numOneBackFP + 
+trimlogfplmm1 <- mixed(formula = logRT ~ scaledNumForeperiod * condition * oneBackFP + 
                          (1|ID),
                        data = data2,
                        control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
@@ -489,17 +363,8 @@ cor(fitted(trimlogfplmm2), data2$logRT)^2
 cor(fitted(trimlogfplmm3), data2$logRT)^2
 
 
-#===================== 2.2.2. Using FP n-1 as categorical (for emm comparisons) ===================
-trimlogfplmm2 <- buildmer(logRT ~ numForeperiod * condition * oneBackFP + 
-                            (1+numForeperiod*condition*oneBackFP|ID), 
-                          data=data2,
-                          buildmerControl = list(direction='backward',
-                                                 crit='LRT',#ddf = "Satterthwaite",
-                                                 family=gaussian(link = 'identity'),
-                                                 calc.anova = TRUE))
+#===================== 2.2.2. Using FP n-1 as categorical for emm comparisons ===================
 
-isSingular(trimlogfplmm2)
-formula(trimlogfplmm2)
 
 
 #==========================  2.2.3. Both FP and FP n-1 as categorical ===============================
@@ -575,8 +440,53 @@ library(marginaleffects)
 slopes(trimfplmm1)
 
 #====================== 3.2. Using FP n-1 as categorical for emm comparisons ==========================
-trimlogfplmm2 <- mixed(logRT ~ 1 + condition + numForeperiod + condition:numForeperiod + 
-                         oneBackFP + numForeperiod:oneBackFP + condition:oneBackFP + condition:oneBackFP:numForeperiod +
+#============= 3.2.1. Using RT ===============
+trimfplmm <- buildmer(RT ~ scaledNumForeperiod * condition * oneBackFP + 
+                        (1 + scaledNumForeperiod * condition * oneBackFP|ID), 
+                      data=data2,
+                      buildmerControl = list(crit='LRT',#ddf = "Satterthwaite",
+                                             family=gaussian(link = 'identity'),
+                                             calc.anova = TRUE))
+
+isSingular(trimfplmm)
+formula(trimfplmm)
+
+trimfplmm <- mixed(RT ~ 1 + scaledNumForeperiod + condition + scaledNumForeperiod:condition + 
+                     oneBackFP + scaledNumForeperiod:oneBackFP + scaledNumForeperiod:condition:oneBackFP +
+                     (1 + condition | ID),
+                    data=data2,
+                    control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+                    progress = TRUE,
+                    expand_re = TRUE,
+                    method =  'KR',
+                    REML=TRUE,
+                    return = "merMod")
+
+anova(trimfplmm)
+
+# Pairwise comparisons
+Fp_by_Previous=emtrends(trimfplmm, "oneBackFP", var = "scaledNumForeperiod")
+Fp_by_Previous
+update(pairs(Fp_by_Previous), by = NULL, adjust = "holm")
+
+Fp_by_Previous=emtrends(trimfplmm, c("condition", "oneBackFP"), var = "scaledNumForeperiod")
+Fp_by_Previous
+update(pairs(Fp_by_Previous), by = NULL, adjust = "none")
+
+#============= 3.2.2. Using logRT ===============
+trimlogfplmm <- buildmer(logRT ~ scaledNumForeperiod * condition * oneBackFP + 
+                           (1 + scaledNumForeperiod * condition * oneBackFP|ID), 
+                         data=data2,
+                         buildmerControl = list(crit='LRT',#ddf = "Satterthwaite",
+                                                family=gaussian(link = 'identity'),
+                                                calc.anova = TRUE))
+
+isSingular(trimlogfplmm)
+formula(trimlogfplmm)
+
+trimlogfplmm2 <- mixed(logRT ~ 1 + scaledNumForeperiod + condition + scaledNumForeperiod:condition + 
+                         oneBackFP + scaledNumForeperiod:oneBackFP + condition:oneBackFP +
+                         scaledNumForeperiod:condition:oneBackFP + 
                          (1 + condition | ID),
                        data=data2,
                        control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
@@ -586,41 +496,17 @@ trimlogfplmm2 <- mixed(logRT ~ 1 + condition + numForeperiod + condition:numFore
                        REML=TRUE,
                        return = "merMod")
 
-summary(trimlogfplmm2)
 anova(trimlogfplmm2)
 
 # Pairwise comparisons
-Fp_by_Previous=emtrends(trimlogfplmm2, "oneBackFP", var = "numForeperiod")
+Fp_by_Previous=emtrends(trimlogfplmm, "oneBackFP", var = "scaledNumForeperiod")
 Fp_by_Previous
 update(pairs(Fp_by_Previous), by = NULL, adjust = "holm")
 
-Fp_by_Previous=emtrends(trimlogfplmm2, c("condition", "oneBackFP"), var = "numForeperiod")
+Fp_by_Previous=emtrends(trimlogfplmm, c("condition", "oneBackFP"), var = "scaledNumForeperiod")
 Fp_by_Previous
 update(pairs(Fp_by_Previous), by = NULL, adjust = "none")
 
-# Using RT
-trimfplmm2 <- mixed(RT ~ 1 + condition + numForeperiod + condition:numForeperiod + 
-                         oneBackFP + numForeperiod:oneBackFP + condition:oneBackFP + condition:oneBackFP:numForeperiod +
-                         (1 + condition | ID),
-                       data=data2,
-                       control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                       progress = TRUE,
-                       expand_re = TRUE,
-                       method =  'KR',
-                       REML=TRUE,
-                       return = "merMod")
-
-summary(trimfplmm2)
-anova(trimfplmm2)
-
-# Pairwise comparisons
-Fp_by_Previous=emtrends(trimfplmm2, "oneBackFP", var = "numForeperiod")
-Fp_by_Previous
-update(pairs(Fp_by_Previous), by = NULL, adjust = "holm")
-
-Fp_by_Previous=emtrends(trimfplmm2, c("condition", "oneBackFP"), var = "numForeperiod")
-Fp_by_Previous
-update(pairs(Fp_by_Previous), by = NULL, adjust = "none")
 
 #========================= 3.3. Both FP and FP n-1 as categorical ===================================
 

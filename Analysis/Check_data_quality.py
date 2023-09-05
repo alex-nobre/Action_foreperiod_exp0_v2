@@ -9,14 +9,15 @@ import pandas as pd
 import glob
 import os
 
-os.chdir('E:/Post-doc_data/Sync/Experimento_0_v2/Pavlovia')
+filesPath = '.\Data'
 
-fileList=glob.glob('./*.csv')
+fileList=glob.glob(filesPath + './*.csv')
 fileList.sort()
 
 nFiles=int(len(fileList))
 
-qualityTable = pd.DataFrame(columns=['participant','errorRateAll','errorRateLeft','errorRateRight','trimmedRTRate'])
+qualityTable = pd.DataFrame(columns=['participant','errorRateAll','errorRateLeft','errorRateRight', 
+'errorRateAction', 'errorRateExternal', 'trimmedRTRate'])
 
 for file in fileList:
      subData=pd.read_csv(file)
@@ -36,8 +37,10 @@ for file in fileList:
      
      # Error rate
      errorRateAll=(len(subData[subData['Response.corr']==0])/len(subData)) * 100 # overall
-     errorRateLeft=(len(subData[(subData['Response.corr']==0)&(subData['orientation']=='left')])/len(subData[subData['orientation']=='left'])) * 100 # go trials
-     errorRateRight=(len(subData[(subData['Response.corr']==0)&(subData['orientation']=='right')])/len(subData[subData['orientation']=='right'])) * 100 # no-go trials
+     errorRateLeft=(len(subData[(subData['Response.corr']==0)&(subData['orientation']=='left')])/len(subData[subData['orientation']=='left'])) * 100 # left gabors
+     errorRateRight=(len(subData[(subData['Response.corr']==0)&(subData['orientation']=='right')])/len(subData[subData['orientation']=='right'])) * 100 # right gabors
+     errorRateAction=(len(subData[(subData['Response.corr']==0)&(subData['condition']=='action')])/len(subData[subData['condition']=='action'])) * 100 # action condition
+     errorRateExternal=(len(subData[(subData['Response.corr']==0)&(subData['condition']=='external')])/len(subData[subData['condition']=='external'])) * 100 # external condition
      
      
      # Percentage of trials excluded due to RT trimming
@@ -45,9 +48,9 @@ for file in fileList:
      trimmedRTs=subData[(subData['RT']>1)&(subData['RT']<0.15)]     
      trimmedRTRate=(len(trimmedRTs)/len(subData)) * 100
      
-     subQualityData=[participantID,errorRateAll,errorRateLeft,
-                     errorRateRight,trimmedRTRate]
+     subQualityData=[participantID, errorRateAll, errorRateLeft,
+                     errorRateRight, errorRateAction, errorRateExternal, trimmedRTRate]
      
      qualityTable.loc[len(qualityTable.index)]=subQualityData
  
-qualityTable.to_csv('G:/My Drive/Post-doc/Projetos/Action_foreperiod/Experimento_0_v2/Analysis/data_quality.csv')
+qualityTable.to_csv('./Analysis/data_quality.csv')

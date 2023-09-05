@@ -1,22 +1,7 @@
 
-#==============================================================================#
-# Changes
-# Replaced column for FP n-1 diff, since it will be used as a continuous variable
-# now
-
-# Use RT in ms instead of s, so that logRT does not assume negative values
-# log of predictors is now log10 instead of log2
-
-# Created columns for quadratic trend for FP and difference between
-# FP and FP n-1
-# Created column for previous orientation and renamed column for comparison
-# between current and previous orientation
-# Created column for trial number
-
-# Create separate columns for logFP as numerical and categorical
-
-# Create column for scaled predictors
-#==============================================================================#
+#====================================================================================#
+# Create dataset with numerical variables in seconds instead of milliseconds
+#====================================================================================#
 
 # Load necessary packages
 library(readr)
@@ -35,15 +20,7 @@ data <- data %>%
   dplyr::select(ID, Acc, condition, block, orientation,
                 foreperiod, RT, counterbalance, 
                 extFixationDuration, action_trigger.rt,
-                oneBackFP, twoBackFP, oneBackEffect)  %>%
-  mutate(foreperiod = foreperiod * 1000,
-         RT = RT *1000,
-         extFixationDuration = extFixationDuration * 1000,
-         action_trigger.rt = action_trigger.rt * 1000,
-         oneBackFP = oneBackFP * 1000,
-         twoBackFP = twoBackFP * 1000,
-         oneBackEffect = oneBackEffect * 1000) #%>%
-  #mutate(across(c(foreperiod, RT, extFixationDuration, action_trigger.rt, oneBackFP, twoBackFP, oneBackEffect), function(x) {x = x * 1000}))
+                oneBackFP, twoBackFP, oneBackEffect)
 
 # Coerce to factors
 data <- data %>%
@@ -128,8 +105,8 @@ dataAll$logOneBackFP <- log10(dataAll$numOneBackFP)
 
 # Remove extreme values
 data <- data %>%
-  filter(RT < 1000) %>%
-  filter(RT > 150)
+  filter(RT < 1.0) %>%
+  filter(RT > 0.15)
 
 # Transform RT to reduce skew
 data$logRT <- ifelse(!is.na(data$RT), log10(data$RT), NA) # log-transform
