@@ -6,22 +6,40 @@
 #================================================================================#
 
 # Load necessary packages
+
+# Read and process data
+library(readr)
 library(magrittr)
-library(tidyverse)
-library(broom)
+library(dplyr)
+library(data.table)
+
+# Plotting
+library(ggplot2)
 library(lattice)
+library(gtable)
+library(gridExtra)
+library(gridGraphics)
+library(ggdist)
+library(ggpubr)
+
+# Linear models
 library(afex)
+library(car)
+library(codingMatrices)
+library(broom)
+library(modelr)
+
+# Mixed models
 library(emmeans)
 library(lme4)
-library(car)
-library(data.table)
-library(codingMatrices)
 library(performance)
-library(modelr)
+library(ggsignif)
+library(rtdists)
+
+# Bayesian analyses
 library(bayestestR)
 library(BayesFactor)
 library(brms)
-library(rtdists)
 
 
 # Save defaults
@@ -244,7 +262,7 @@ library(lme4)
 library(buildmer)
 
 with_onebackfp <- mixed(formula = logRT ~ 1 + condition + numForeperiod + condition:numForeperiod + 
-                        numOneBackFP + numForeperiod:numOneBackFP + condition:numOneBackFP + 
+                        oneBackFP + numForeperiod:oneBackFP + condition:oneBackFP + 
                         (1 + condition + numForeperiod | ID),
                       data = data2,
                       control = lmerControl(optimizer = c('bobyqa'), optCtrl = list(maxfun=2e5), calc.derivs = FALSE),
@@ -254,7 +272,7 @@ with_onebackfp <- mixed(formula = logRT ~ 1 + condition + numForeperiod + condit
                       REML = TRUE,
                       return = 'merMod')
 
-isSingular(no_onebackfp)
+isSingular(with_onebackfp)
 
 no_onebackfp <- mixed(formula = logRT ~ 1 + condition + numForeperiod + condition:numForeperiod +
                           (1 + condition + numForeperiod | ID),
@@ -267,7 +285,7 @@ no_onebackfp <- mixed(formula = logRT ~ 1 + condition + numForeperiod + conditio
                         return = 'merMod')
 
 
-isSingular(with_onebackfp)
+isSingular(no_onebackfp)
 
 BIC(no_onebackfp, with_onebackfp)
 
@@ -278,7 +296,7 @@ bic_to_bf(c(BIC(no_onebackfp),
 
 
 with_condition <- mixed(formula = logRT ~ 1 + condition + numForeperiod + condition:numForeperiod + 
-                          numOneBackFP + numForeperiod:numOneBackFP + condition:numOneBackFP + 
+                          oneBackFP + numForeperiod:oneBackFP + condition:oneBackFP + 
                           (1 + condition + numForeperiod | ID),
                         data = data2,
                         control = lmerControl(optimizer = c('bobyqa'), optCtrl = list(maxfun=2e5), calc.derivs = FALSE),
@@ -290,7 +308,7 @@ with_condition <- mixed(formula = logRT ~ 1 + condition + numForeperiod + condit
 
 isSingular(with_condition)
 
-no_condition <- mixed(formula = logRT ~ 1 + numForeperiod + numOneBackFP + numForeperiod:numOneBackFP +
+no_condition <- mixed(formula = logRT ~ 1 + numForeperiod + oneBackFP + numForeperiod:pneBackFP +
                       (1 + numForeperiod | ID),
                       data = data2,
                       control = lmerControl(optimizer = c('bobyqa'), optCtrl = list(maxfun=2e5), calc.derivs = FALSE),
@@ -451,6 +469,190 @@ invgausfit <- brm(RT ~ condition + (1|ID),
                   family = inverse.gaussian(),
                   file = 'invgaussianfit')
 
+# FP and condition by participant
+rt_by_fp_cond_part <- ggplot(data = summaryData2,
+                             aes(x = foreperiod,
+                                 y = meanRT,
+                                 color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.1, geom = "errorbar") +
+  labs(title = "RT by FP and condition",
+       x = "Foreperiod", 
+       y = "Mean RT",
+       color = "Condition") +
+  theme(plot.title = element_text(size = 14, hjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = 6)) +
+  scale_color_manual(values = c("orange","blue")) +
+  facet_wrap(~ ID)
+ggsave("./Analysis/Plots/rt_by_fp_cond_part.png",
+       rt_by_fp_cond_part,
+       width = 6.7,
+       height = 5)
+
+
+# FP and condition
+rt_by_condition <- ggplot(data = summaryData2 %>% 
+                               group_by(ID, foreperiod, condition) %>% 
+                               summarise(meanRT = mean(meanRT)),
+                             aes(x = foreperiod,
+                                 y = meanRT,
+                                 color = condition)) +
+  geom_jitter(height = 0.1, width = 0.15, alpha = 0.5) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.1, geom = "errorbar") +
+  labs(title = "RT by FP and condition",
+       x = "Foreperiod", 
+       y = "Mean RT",
+       color = "Condition") +
+  theme(plot.title = element_text(size = 14, hjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  scale_color_manual(values = c("orange","blue"))
+ggplot2::ggsave("./Analysis/Plots/RT_by_condition.png",
+                rt_by_condition,
+                width = 8.5,
+                height = 5.7)
+
+# using LogRT
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = meanLogRT,
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", size = 1, aes(group = condition)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5))) +
+  scale_color_manual(values = c("orange", "blue"))
+
+# Aggregated across conditions
+ggplot(data = summaryData2 %>%
+         group_by(ID, foreperiod, condition, oneBackFP) %>%
+         summarise(meanRT = mean(meanRT)),
+       aes(x = foreperiod,
+           y = meanRT,
+           color=oneBackFP)) +
+  stat_summary(fun = "mean", geom = "point", size = 1.5) +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.8, aes(group=oneBackFP)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.1, linewidth = 0.8) +
+  labs(x = "Foreperiod",
+       y = "Mean RT",
+       color = "FP n -1") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5)))+
+  scale_color_manual(values = c('blue','orange','green', 'magenta'))
+ggsave("./Analysis/Plots/seqeff.png",
+       width = 8.5,
+       height = 5.7)
+
+# Separated by condition
+ggplot(data = summaryData2 %>%
+         group_by(ID, foreperiod, oneBackFP, condition) %>%
+         summarise(meanRT = mean(meanRT)),
+       aes(x = foreperiod,
+           y = meanRT,
+           color = oneBackFP)) +
+  stat_summary(fun = "mean", geom = "point", size = 1.5) +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.6, aes(group = oneBackFP)) +
+  stat_summary(fun.data = "mean_cl_boot", linewidth = 0.3, width = 0.05, geom = "errorbar") +
+  labs(x = "Foreperiod",
+       y = "Mean RT",
+       color = "FP n-1") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5))) +
+  facet_wrap(~condition) +
+  scale_color_manual(values = c('blue','orange','green', 'magenta'))
+ggsave("./Analysis/Plots/seqeff_by_condition.png",
+       width = 8.5,
+       height = 5.7)
+
+# Differences by condition
+ggplot(data = summaryData2,
+       aes(x = oneBackFP,
+           y = meanSeqEff,
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point", size = 1.5) +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.6, aes(group = condition)) +
+  stat_summary(fun.data = "mean_cl_boot", size = 0.4, width = 0.1, geom = "errorbar") +
+  facet_wrap(~ foreperiod) +
+  scale_color_manual(values = c("orange", "blue"))
+
+# Sequential effects separated by FP n-1
+seqEff_by_oneback <- ggplot(data = summaryData2 %>%
+                              group_by(ID, foreperiod, condition, oneBackFP) %>%
+                              summarise(meanRT = mean(meanRT)),
+                            aes(x = foreperiod,
+                                y = meanRT,
+                                color=condition)) +
+  geom_jitter(height = 0, width = 0.30, alpha = 0.5) +
+  stat_summary(fun = "mean", geom = "point", size = 1.5) +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1.4, aes(group=condition)) +
+  stat_summary(fun.data = "mean_cl_boot", linewidth = 1.2, width = 0.1, geom = "errorbar") + 
+  labs(x = "FP (s)",
+       y = "Mean RT (s)",
+       color = "Condition") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        strip.background = element_blank(),
+        axis.text = element_text(size = rel(0.9)),
+        axis.title = element_text(size = rel(1.1)),
+        strip.text = element_text(size = rel(1.1)),
+        legend.title = element_text(size = rel(0.9)),
+        legend.text = element_text(size = rel(0.8)),
+        legend.key = element_blank(),
+        legend.box.spacing = unit(0, "pt")) +
+  facet_wrap(~oneBackFP) +
+  scale_color_manual(values = c("orange", "blue"), labels = c("External", "Action"))
+
+ggsave("./Analysis/Plots/SeqEff.pdf",
+       seqEff_by_oneback,
+       width = 20,
+       height = 8.33,
+       units = "cm")
+
+# Accuracy
+errors_by_fp_condition <- ggplot(data = summaryDataAcc %>%
+                                   group_by(ID, foreperiod, condition) %>%
+                                   summarise(errorRate = mean(errorRate)),
+                                 aes(x = foreperiod,
+                                     y = errorRate,
+                                     color = condition)) +
+  labs(title = "Error Rate",
+       x = "FP (s)",
+       y = "Mean Error Rate" ) +
+  geom_jitter(height = 0, width = 0.15) +
+  stat_summary(fun = "mean", geom = "point", size = 1.8) +
+  stat_summary(fun = "mean", geom = "line", aes(group = condition), linewidth = 0.8) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", linewidth = 0.7, width = 0.05) +
+  theme(plot.title = element_text(size = 14, hjust = 0.5),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.2)),
+        axis.title = element_text(size = rel(1.2))) +
+  scale_color_manual(values = c("orange", "blue"))
+
+ggsave("./Analysis/Plots/errors_by_fp_condition.pdf",
+       errors_by_fp_condition,
+       width = 7.5,
+       height = 5)
+
 #==========================================================================================#
 #======================================= 3. ANOVAs =========================================
 #==========================================================================================#
@@ -470,95 +672,6 @@ contrasts(summaryDataAll$oneBackFP) <- contr.treatment(4)-matrix(rep(1/4,12),nco
 
 #==================== 3.1. FP x RT by condition ======================
 #================ 3.1.1. RT =================
-
-# FP and condition by participant
-rt_by_fp_cond_part <- ggplot(data = summaryData2,
-                             aes(x = foreperiod,
-                                 y = meanRT,
-                                 color = condition)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.1, geom = "errorbar") +
-  labs(title = "RT by FP and condition",
-       x = "Foreperiod", 
-       y = "Mean RT",
-       color = "Condition") +
-  theme(plot.title = element_text(size = 14, hjust = 0.5),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank()) +
-  scale_color_manual(values = c("orange","blue")) +
-  facet_wrap(~ ID)
-ggsave("./Analysis/Plots/rt_by_fp_cond_part.png",
-       rt_by_fp_cond_part,
-       width = 6.7,
-       height = 5)
-
-
-# FP and condition
-lines_by_condition <- ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanRT,
-           color = condition)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.1, geom = "errorbar") +
-  labs(title = "RT by FP and condition",
-       x = "Foreperiod", 
-       y = "Mean RT",
-       color = "Condition") +
-  theme(plot.title = element_text(size = 14, hjust = 0.5),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank()) +
-  scale_color_manual(values = c("orange","blue"))
-ggplot2::ggsave("./Analysis/Plots/RT_by_condition.png",
-                lines_by_condition,
-                width = 8.5,
-                height = 5.7)
-
-# using LogRT
-ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanLogRT,
-           color = condition)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", size = 1, aes(group = condition)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.5))) +
-  scale_color_manual(values = c("orange", "blue"))
-
-
-# Individual panels by participant for RT and log RT
-ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanRT,
-           color = condition)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank()) +
-  scale_color_manual(values = c("orange","blue")) +
-  facet_wrap(~ID)
-
-ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanLogRT,
-           color = condition)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank()) +
-  scale_color_manual(values = c("orange","blue")) +
-  facet_wrap(~ID)
 
 # Run repeated-measures anova
 fpAnova <- aov_ez(id = "ID",
@@ -629,36 +742,6 @@ plot(is_norm, type = 'qq')
 
 plot(is_norm, type = 'qq', detrend = TRUE)
 
-# The log-transform does not solve the problem either
-
-fpregression <- lm(meanRT ~ condition * foreperiod, data = summaryData)
-summary(fpregression)
-anova(fpregression)
-
-logfpregression <- lm(meanRT ~ condition * logFP, data = summaryData)
-anova(logfpregression)
-
-#================ 3.1.2. Accuracy =================
-ggplot(data = summaryDataAll,
-       aes(x = foreperiod,
-           y = meanAcc,
-           color = condition)) +
-  labs(title = "Accuracy (proportion of correct responses)",
-       x = "Foreperiod",
-       y = "Mean Acc" ) +
-  stat_summary(fun = "mean", geom = "point", size = 1.8) +
-  stat_summary(fun = "mean", geom = "line", aes(group = condition), linewidth = 0.8) +
-  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", linewidth = 0.7, width = 0.05) +
-  theme(plot.title = element_text(size = 14, hjust = 0.5),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.2)),
-        axis.title = element_text(size = rel(1.2))) +
-  scale_color_manual(values = c("orange", "blue"))
-ggsave("./Analysis/Plots/acc_by_condition.png",
-       width = 7.5,
-       height = 5)
 
 # ============ 3.1.2. Fit models separately for external condition (safety check) ====================
 logfpAnovaExt <- aov_ez(id = "ID",
@@ -691,61 +774,6 @@ logfpAnovaExt2 <- aov_ez(id = "ID",
 #============================== 3.2. Sequential effects ================================================
 
 #============= 3.2.1. RT ==================
-# Aggregated across conditions
-ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanRT,
-           color=oneBackFP)) +
-  stat_summary(fun = "mean", geom = "point", size = 1.5) +
-  stat_summary(fun = "mean", geom = "line", linewidth = 0.8, aes(group=oneBackFP)) +
-  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.1, linewidth = 0.8) +
-  labs(x = "Foreperiod",
-       y = "Mean RT",
-       color = "FP n -1") +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.5)))+
-  scale_color_manual(values = c('blue','orange','green', 'magenta'))
-ggsave("./Analysis/Plots/seqeff.png",
-       width = 8.5,
-       height = 5.7)
-
-# Separated by condition
-ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanRT,
-           color = oneBackFP)) +
-  stat_summary(fun = "mean", geom = "point", size = 1.5) +
-  stat_summary(fun = "mean", geom = "line", linewidth = 0.6, aes(group = oneBackFP)) +
-  stat_summary(fun.data = "mean_cl_boot", size = 0.3, width = 0.05, geom = "errorbar") +
-  labs(x = "Foreperiod",
-       y = "Mean RT",
-       color = "FP n-1") +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.5))) +
-  facet_wrap(~condition) +
-  scale_color_manual(values = c('blue','orange','green', 'magenta'))
-ggsave("./Analysis/Plots/seqeff_by_condition.png",
-       width = 8.5,
-       height = 5.7)
-
-# Differences by condition
-ggplot(data = summaryData2,
-       aes(x = oneBackFP,
-           y = meanSeqEff,
-           color = condition)) +
-  stat_summary(fun = "mean", geom = "point", size = 1.5) +
-  stat_summary(fun = "mean", geom = "line", linewidth = 0.6, aes(group = condition)) +
-  stat_summary(fun.data = "mean_cl_boot", size = 0.4, width = 0.1, geom = "errorbar") +
-  facet_wrap(~ foreperiod) +
-  scale_color_manual(values = c("orange", "blue"))
-
-
 # 2.2.1. Anova for FP n-1
 seqEffAnova <- aov_ez(id = "ID",
                   dv = "meanRT",
@@ -866,6 +894,14 @@ AccAnova <- aov_ez(id = "ID",
                    dv = "meanAcc",
                    data = summaryDataAll,
                    within = c("foreperiod", "condition", "oneBackFP"))
+
+AccAnova <- aov_ez(id = "ID",
+                   dv = "meanAcc",
+                   data = summaryDataAll,
+                   within = c("foreperiod", "condition"))
+
+acc_emm <- emmeans(AccAnova, c("condition", "foreperiod"))
+pairs(acc_emm, by = "foreperiod")
 
 # ============ 3.2.2. Fit models separately for external condition (safety check) ====================
 seqEffAnovaExt <- aov_ez(id = "ID",
@@ -2289,7 +2325,7 @@ rt_extr_fps_part <- ggplot(data = extrFPData,
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.2)),
+        axis.text = element_text(size = rel(0.8)),
         axis.title = element_text(size = rel(1.2))) +
   scale_color_manual(values = c("orange", "blue"), labels = c("External", "Action")) +
   facet_wrap(~ ID)

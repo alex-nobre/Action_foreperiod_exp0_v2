@@ -35,15 +35,7 @@ data <- data %>%
   dplyr::select(ID, Acc, condition, block, orientation,
                 foreperiod, RT, counterbalance, 
                 extFixationDuration, action_trigger.rt,
-                oneBackFP, twoBackFP, oneBackEffect)  %>%
-  mutate(foreperiod = foreperiod * 1000,
-         RT = RT *1000,
-         extFixationDuration = extFixationDuration * 1000,
-         action_trigger.rt = action_trigger.rt * 1000,
-         oneBackFP = oneBackFP * 1000,
-         twoBackFP = twoBackFP * 1000,
-         oneBackEffect = oneBackEffect * 1000) #%>%
-  #mutate(across(c(foreperiod, RT, extFixationDuration, action_trigger.rt, oneBackFP, twoBackFP, oneBackEffect), function(x) {x = x * 1000}))
+                oneBackFP, twoBackFP, oneBackEffect)
 
 # Coerce to factors
 data <- data %>%
@@ -88,8 +80,8 @@ data <- data %>%
   mutate(oneBackFPDiff = as.factor(numOneBackFPDiff), # to summarise RTs according to value of FP n-1
          squaredNumOneBackFPDiff = numOneBackFPDiff^2) %>% # quadratic term for difference between FP and FP n-1
   mutate(prevFPLonger = case_when(numOneBackFPDiff>0 ~ "0",
-                                   numOneBackFPDiff<0 ~ "1",
-                                   numOneBackFPDiff==0 ~ "0")
+                                  numOneBackFPDiff<0 ~ "1",
+                                  numOneBackFPDiff==0 ~ "0")
   ) %>%
   mutate(prevFPLonger = as.factor(prevFPLonger)) %>%
   mutate(prevFPLonger = fct_relevel(prevFPLonger, c("0", "1"))) %>%
@@ -102,34 +94,43 @@ data <- data %>%
          prevOri = lag(orientation)) %>%
   mutate(seqOri = as.factor(seqOri),
          prevOri = as.factor(prevOri))
-  
+
 
 # Remove trials without n-1 FP values (i.e., first of each block)
 data <- data %>%
   filter(!is.na(oneBackFP)) #%>%
-  # filter(!is.na(oneBackFP), !is.na(twoBackFP))
+# filter(!is.na(oneBackFP), !is.na(twoBackFP))
 
 
 # Save data with error trials to assess accuracy
-dataAll <- data
+dataAcc <- data
 
 # Keep only trials with correct responses to analyze RT
 data <- data %>%
   filter(!is.na(RT), Acc == 1)
+
+# Create variable for error rate
+dataAcc$Error <- abs(dataAcc$Acc - 1)
 
 # Create log10 of continuous indenpendent variables
 data$numLogFP <- log10(data$numForeperiod)
 data$logFP <- as.factor(data$numLogFP)
 data$logOneBackFP <- log10(data$numOneBackFP)
 
-dataAll$numLogFP <- log10(dataAll$numForeperiod)
-dataAll$logFP <- as.factor(dataAll$numLogFP)
-dataAll$logOneBackFP <- log10(dataAll$numOneBackFP)
+dataAcc$numLogFP <- log10(dataAcc$numForeperiod)
+dataAcc$logFP <- as.factor(dataAcc$numLogFP)
+dataAcc$logOneBackFP <- log10(dataAcc$numOneBackFP)
+
+# Factor version of accuracy/error rate
+dataAcc$acc_result <- as.factor(dataAcc$Acc)
+dataAcc$error_result <- as.factor(dataAcc$Error)
 
 # Remove extreme values
+ntrials_before_extrem <- nrow(data)
 data <- data %>%
-  filter(RT < 1000) %>%
-  filter(RT > 150)
+  filter(RT < 1.0) %>%
+  filter(RT > 0.15)
+ntrials_after_extrem <- nrow(data)
 
 # Transform RT to reduce skew
 data$logRT <- ifelse(!is.na(data$RT), log10(data$RT), NA) # log-transform
@@ -176,14 +177,14 @@ data2 <- data2 %>%
   ungroup()
 data2$squaredScaledNumOneBackFPDiff = data2$scaledNumOneBackFPDiff^2
 
-dataAll$scaledNumForeperiod <- scale(dataAll$numForeperiod, scale = FALSE)[,1]
-dataAll$squaredScaledNumForeperiod <- dataAll$scaledNumForeperiod^2
-dataAll$scaledNumOneBackFP <- scale(dataAll$numOneBackFP, scale = FALSE)[,1]
-dataAll <- dataAll %>%
+dataAcc$scaledNumForeperiod <- scale(dataAcc$numForeperiod, scale = FALSE)[,1]
+dataAcc$squaredScaledNumForeperiod <- dataAcc$scaledNumForeperiod^2
+dataAcc$scaledNumOneBackFP <- scale(dataAcc$numOneBackFP, scale = FALSE)[,1]
+dataAcc <- dataAcc %>%
   group_by(ID, block) %>%
   mutate(scaledNumOneBackFPDiff = scale(numOneBackFPDiff, scale = FALSE)[,1]) %>%
   ungroup()
-dataAll$squaredScaledNumOneBackFPDiff = dataAll$scaledNumOneBackFPDiff^2
+dataAcc$squaredScaledNumOneBackFPDiff = dataAcc$scaledNumOneBackFPDiff^2
 
 
 # Average data
@@ -236,11 +237,12 @@ summaryData2 <- data2 %>%
          squaredScaledNumOneBackFPDiff = scaledNumOneBackFPDiff^2)
 
 
-summaryDataAll <- dataAll %>%
+summaryDataAcc <- dataAcc %>%
   group_by(ID,foreperiod,condition,
            oneBackFP) %>%
   summarise(meanRT = mean(RT),
             meanAcc = mean(Acc),
+            errorRate = mean(Error),
             meanSeqEff = mean(oneBackEffect)) %>%
   ungroup() %>%
   mutate(numForeperiod = as.numeric(as.character(foreperiod)),
