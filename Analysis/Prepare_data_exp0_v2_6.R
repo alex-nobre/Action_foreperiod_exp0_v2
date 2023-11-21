@@ -67,6 +67,9 @@ data <- data %>%
 data <- data %>%
   group_by(ID) %>%
   mutate(trial = seq(1,n())) %>%
+  ungroup() %>%
+  group_by(ID, block) %>%
+  mutate(trial_bl = seq(1, n())) %>%
   ungroup()
 
 # Create columns for numerical and categorical difference between current and previous FP, and for 
@@ -187,6 +190,26 @@ dataAcc <- dataAcc %>%
 dataAcc$squaredScaledNumOneBackFPDiff = dataAcc$scaledNumOneBackFPDiff^2
 
 
+###############################################################
+# Add delay data
+###############################################################
+delayData <- read_csv("./Analysis/delayDataAll.csv") %>%
+  mutate(across(c(ID, condition), as_factor)) %>%
+  select(-condition)
+
+data <- data %>%
+  filter(ID %!in% c("007"))
+data2 <- data2 %>%
+  filter(ID %!in% c("007"))
+dataAcc <- dataAcc %>%
+  filter(ID %!in% c("007"))
+
+data <- inner_join(data, delayData, by = c("trial", "ID"))
+data2 <- inner_join(data2, delayData, by = c("trial", "ID"))
+dataAcc <- inner_join(dataAcc, delayData, by = c("trial", "ID"))
+
+################################################################
+
 # Average data
 summaryData <- data %>%
   group_by(ID,foreperiod,logFP,condition,
@@ -197,7 +220,8 @@ summaryData <- data %>%
             meanLogRT = mean(logRT),
             meanRTzscore = mean(RTzscore),
             meanInvRT = mean(invRT),
-            meanSeqEff = mean(oneBackEffect)) %>%
+            meanSeqEff = mean(oneBackEffect),
+            meanDelay = mean(delay)) %>%
   ungroup() %>%
   mutate(numForeperiod = as.numeric(as.character(foreperiod)),
          numOneBackFP = as.numeric(as.character(oneBackFP)),
@@ -221,7 +245,8 @@ summaryData2 <- data2 %>%
             meanLogRT = mean(logRT),
             meanRTzscore = mean(RTzscore),
             meanInvRT = mean(invRT),
-            meanSeqEff = mean(oneBackEffect)) %>%
+            meanSeqEff = mean(oneBackEffect),
+            meanDelay = mean(delay)) %>%
   ungroup() %>%
   mutate(numForeperiod = as.numeric(as.character(foreperiod)),
          numOneBackFP = as.numeric(as.character(oneBackFP)),
@@ -243,7 +268,8 @@ summaryDataAcc <- dataAcc %>%
   summarise(meanRT = mean(RT),
             meanAcc = mean(Acc),
             errorRate = mean(Error),
-            meanSeqEff = mean(oneBackEffect)) %>%
+            meanSeqEff = mean(oneBackEffect),
+            meanDelay = mean(delay)) %>%
   ungroup() %>%
   mutate(numForeperiod = as.numeric(as.character(foreperiod)),
          numOneBackFP = as.numeric(as.character(oneBackFP))) %>%

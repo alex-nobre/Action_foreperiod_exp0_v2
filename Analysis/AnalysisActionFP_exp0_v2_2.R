@@ -210,7 +210,26 @@ ggplot(data = summaryData,
         axis.text = element_text(size = rel(1.5)),
         axis.title = element_text(size = rel(1.5)))
 
+# Histograms of delays between action and WS
+ggplot(data = data2) +
+  geom_histogram(aes(x = round(delay,3)))
 
+# Frequency of values in delay vector
+table(round(data2$delay, 3))
+
+# Plot RT against delay excluding zero-delay trials
+ggplot(data = filter(data2, delay > 0, delay < 0.034), aes(x = delay, y = RT)) +
+  geom_point() +
+  geom_abline()
+
+# Plot RT against delay with best-fitting regression line
+ggplot(data = data2, aes(x = delay, y = RT)) +
+  geom_point() +
+  geom_abline() +
+  ylim(c(0,1.0))
+
+# Correlation between RT and delay excluding zero-delay trials
+cor(filter(goData2, delay > 0)$delay, filter(goData2, delay > 0)$RT) 
 
 #==========================================================================================#
 #================================= 1.2. Stopping-rule ======================================
@@ -377,7 +396,7 @@ summary(b_one_back_fp)
 options(options_defaults)
 
 #==========================================================================================#
-#================================ 2. Descriptive analysis ==================================
+#================================ 2. Descriptive analyses ==================================
 #==========================================================================================#
 # Boxplots
 boxplots <- ggplot(data=summaryData,
@@ -501,12 +520,12 @@ rt_by_condition <- ggplot(data = summaryData2 %>%
                              aes(x = foreperiod,
                                  y = meanRT,
                                  color = condition)) +
-  geom_jitter(height = 0.1, width = 0.15, alpha = 0.5) +
+  geom_jitter(height = 0, width = 0.15, alpha = 0.5) +
   stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.1, geom = "errorbar") +
-  labs(title = "RT by FP and condition",
-       x = "Foreperiod", 
+  stat_summary(fun = "mean", geom = "line", linewidth = 1.4, aes(group = condition)) +
+  stat_summary(fun.data = "mean_se", linewidth = 1.2, width = 0.1, geom = "errorbar") +
+  labs(title = "RT",
+       x = "FP", 
        y = "Mean RT",
        color = "Condition") +
   theme(plot.title = element_text(size = 14, hjust = 0.5),
@@ -534,7 +553,7 @@ ggplot(data = summaryData2,
         axis.title = element_text(size = rel(1.5))) +
   scale_color_manual(values = c("orange", "blue"))
 
-# Aggregated across conditions
+# Sequential effects aggregated across conditions
 ggplot(data = summaryData2 %>%
          group_by(ID, foreperiod, condition, oneBackFP) %>%
          summarise(meanRT = mean(meanRT)),
@@ -577,9 +596,11 @@ ggplot(data = summaryData2 %>%
         axis.title = element_text(size = rel(1.5))) +
   facet_wrap(~condition) +
   scale_color_manual(values = c('blue','orange','green', 'magenta'))
-ggsave("./Analysis/Plots/seqeff_by_condition.png",
-       width = 8.5,
-       height = 5.7)
+
+ggsave("./Analysis/Plots/seqeff_by_condition.tiff",
+       width = 20,
+       height = 11.11,
+       unit = "cm")
 
 # Differences by condition
 ggplot(data = summaryData2,
@@ -626,8 +647,14 @@ ggsave("./Analysis/Plots/SeqEff.pdf",
        height = 8.33,
        units = "cm")
 
+ggsave("./Analysis/Plots/seqEff.tiff",
+       seqEff_by_oneback,
+       width = 20,
+       height = 11.11,
+       unit = "cm")
+
 # Accuracy
-errors_by_fp_condition <- ggplot(data = summaryDataAcc %>%
+error_by_condition <- ggplot(data = summaryDataAcc %>%
                                    group_by(ID, foreperiod, condition) %>%
                                    summarise(errorRate = mean(errorRate)),
                                  aes(x = foreperiod,
@@ -636,22 +663,92 @@ errors_by_fp_condition <- ggplot(data = summaryDataAcc %>%
   labs(title = "Error Rate",
        x = "FP (s)",
        y = "Mean Error Rate" ) +
-  geom_jitter(height = 0, width = 0.15) +
-  stat_summary(fun = "mean", geom = "point", size = 1.8) +
-  stat_summary(fun = "mean", geom = "line", aes(group = condition), linewidth = 0.8) +
-  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", linewidth = 0.7, width = 0.05) +
-  theme(plot.title = element_text(size = 14, hjust = 0.5),
+  geom_jitter(height = 0, width = 0.15, alpha = 0.5) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1.4, aes(group = condition)) +
+  stat_summary(fun.data = "mean_se", linewidth = 1.2, width = 0.1, geom = "errorbar") +
+  theme(plot.title = element_text(hjust = 0.5, size = 14),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.2)),
-        axis.title = element_text(size = rel(1.2))) +
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5)),
+        legend.text = element_text(size = rel(1.2)),
+        legend.title = element_text(size = rel(1.5)),
+        legend.key = element_blank(),
+        legend.box.spacing = unit(0, "pt"),
+        legend.margin = margin(5.5, 5.5, 5.5, 1),
+        plot.margin = unit(c(5.5, 5.5, 5.5, 1), "pt")) +
   scale_color_manual(values = c("orange", "blue"))
 
 ggsave("./Analysis/Plots/errors_by_fp_condition.pdf",
-       errors_by_fp_condition,
+       error_by_condition,
        width = 7.5,
        height = 5)
+
+# RT and error rate in single panel
+cond_legend <- gtable_filter(ggplot_gtable(ggplot_build(error_by_condition + 
+                                                          theme(legend.title = element_text(size = rel(1.1)),
+                                                                legend.text = element_text(size = rel(0.9))))), "guide-box")
+
+xaxis_title <- text_grob(error_by_condition$labels$x,
+                         just = "top",
+                         size = (error_by_condition + 
+                                   theme(axis.title = element_text(size = rel(1.4))))$theme$axis.title$size * 11) # 11 is the base size in theme_grey
+
+
+xaxis_title_margin <- unit(2, "line")
+
+
+# Visualize
+grid.arrange(arrangeGrob(rt_by_condition + theme(legend.position = "none",
+                                                 axis.text = element_text(size = rel(1.2)),
+                                                 axis.title = element_text(size = rel(1.4)),
+                                                 plot.title = element_text(size = rel(1.5)),
+                                                 axis.title.x = element_blank()),
+                         error_by_condition + theme(legend.position = "none",
+                                                    axis.text = element_text(size = rel(1.2)),
+                                                    axis.title = element_text(size = rel(1.4)),
+                                                    plot.title = element_text(size = rel(1.5)),
+                                                    axis.title.x = element_blank()),
+                         cond_legend,
+                         nrow = 1,
+                         widths = c(4/9, 4/9, 1/9)),
+             xaxis_title,
+             heights = unit.c(unit(1, "null"),
+                              grobHeight(xaxis_title) + xaxis_title_margin),
+             nrow = 2)
+
+# Save plots
+rt_error_plots <- arrangeGrob(arrangeGrob(rt_by_condition + theme(legend.position = "none",
+                                                                  axis.text = element_text(size = rel(1.2)),
+                                                                  axis.title = element_text(size = rel(1.4)),
+                                                                  plot.title = element_text(size = rel(1.5)),
+                                                                  axis.title.x = element_blank()),
+                                          error_by_condition + theme(legend.position = "none",
+                                                                     axis.text = element_text(size = rel(1.2)),
+                                                                     axis.title = element_text(size = rel(1.4)),
+                                                                     plot.title = element_text(size = rel(1.5)),
+                                                                     axis.title.x = element_blank()),
+                                          cond_legend,
+                                          nrow = 1,
+                                          widths = c(4/9, 4/9, 1/9)),
+                              xaxis_title,
+                              heights = unit.c(unit(1, "null"),
+                                               grobHeight(xaxis_title) + xaxis_title_margin),
+                              nrow = 2)
+
+ggsave("./Analysis/Plots/rt_error_plots.pdf",
+       rt_error_plots,
+       width = 20,
+       height = 11.11,
+       unit = "cm")
+
+ggsave("./Analysis/Plots/rt_error_plots.tiff",
+       rt_error_plots,
+       width = 20,
+       height = 11.11,
+       unit = "cm")
 
 #==========================================================================================#
 #======================================= 3. ANOVAs =========================================
@@ -1193,6 +1290,137 @@ fpAnova_ea <- aov_ez(id = "ID",
                      dv = "meanRT",
                      data = summaryData2[summaryData2$counterbalance=='external-action',],
                      within = c("foreperiod", "condition"))
+
+# Examine first trials for possible stabilization of RT
+firstBlockData <- data2 %>%
+  filter(block == '0', trial_bl %in% 1:80)
+
+
+ggplot(data = firstBlockData,
+       aes(x = trial_bl,
+           y = RT,
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.5, aes(group = condition)) +
+  geom_smooth() +
+  scale_color_manual(values = c('orange', 'blue'))
+
+# Examine learning across all trials
+ggplot(data = data2,
+       aes(x = trial,
+           y = RT,
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.5, aes(group = condition)) +
+  geom_smooth() +
+  scale_color_manual(values = c('orange', 'blue')) +
+  facet_wrap(~counterbalance)
+
+# Bin trials across all blocks
+data2 <- data2 %>%
+  group_by(ID) %>%
+  mutate(binTrial = ntile(trial, n =4)) %>%
+  ungroup()
+
+ggplot(data = data2,
+       aes(x = binTrial,
+           y = RT)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.5, aes(group = 1)) +
+  scale_color_manual(values = c('orange', 'blue'))
+
+
+# Binned trials by condition
+data2 <- data2 %>%
+  group_by(ID, condition) %>%
+  mutate(binTrial = ntile(trial, n =2)) %>%
+  mutate(binTrial = as.factor(binTrial)) %>%
+  ungroup()
+
+
+ggplot(data = data2 %>%
+         group_by(ID, condition, counterbalance, binTrial) %>%
+         summarise(meanRT = mean(RT)),
+       aes(x = binTrial,
+           y = meanRT,
+           color = condition)) +
+  geom_jitter(height = 0, width = 0.15, alpha = 0.5) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.5, aes(group = condition)) +
+  scale_color_manual(values = c('orange', 'blue')) +
+  facet_wrap(~ counterbalance)
+
+firstBlockData <- firstBlockData %>%
+  group_by(ID) %>%
+  mutate(binTrial = ntile(trial, n = 8)) %>%
+  ungroup()
+
+ggplot(data = firstBlockData,
+       aes(x = binTrial,
+           y = RT,
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.5, aes(group = condition)) +
+  scale_color_manual(values = c('orange', 'blue'))
+
+
+# Regression by block
+blocklm <- lm(meanRT ~ foreperiod * condition * block,
+              data = summaryData2)
+
+anova(blocklm)
+Anova(blocklm)
+
+ggplot(data = data2,
+       aes(x = trial,
+           y = RT,
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
+  #stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.2) +
+  scale_color_manual(values = c('orange', 'blue')) +
+  facet_wrap(~ foreperiod, nrow = 2, ncol = 1)
+
+# 2.4.2. Split participants' trias in 3 bins and compare average RTs
+dataBin <- data2 %>%
+  group_by(ID, condition) %>%
+  mutate(trialBin)
+
+
+# 2.4.3. Examine fp length order by condition
+# By FP order
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = meanRT,
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", aes(group = condition)) +
+  stat_summary(fun.data='mean_cl_boot',width=0.2,geom='errorbar')+
+  theme(plot.title=element_text(size = rel(2), hjust = 0.5),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.background=element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5)))+
+  scale_color_manual(values=c('orange','blue')) +
+  facet_grid(counterbalance ~ fpOrder)
+
+# By FP order and block
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = meanRT,
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", aes(group = condition)) +
+  stat_summary(fun.data='mean_cl_boot',width=0.2,geom='errorbar')+
+  theme(plot.title=element_text(size = rel(2), hjust = 0.5),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.background=element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5)))+
+  scale_color_manual(values=c('orange','blue')) +
+  facet_grid(counterbalance ~ fpOrder * block)
 
 
 #===================================================================================================#
@@ -2334,3 +2562,4 @@ ggsave("./Analysis/Plots/rt_extr_fps_part.png",
        rt_extr_fps_part,
        width = 6.7,
        height = 5)
+
