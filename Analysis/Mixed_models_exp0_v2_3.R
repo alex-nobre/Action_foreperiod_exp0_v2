@@ -26,6 +26,7 @@ library(lme4)
 library(MuMIn)
 library(buildmer)
 library(broom.mixed)
+library(marginaleffects)
 
 # Bayesian models
 library(brms)
@@ -571,56 +572,93 @@ emtrends(trimfplmm1, by = "numOneBackFP", var = "numForeperiod")
 Fp_by_Previous
 update(pairs(Fp_by_Previous), by = NULL, adjust = "none")
 
-library(marginaleffects)
 slopes(trimfplmm1)
 
 #====================== 3.2. Using FP n-1 as categorical for emm comparisons ==========================
-trimlogfplmm2 <- mixed(logRT ~ 1 + condition + numForeperiod + condition:numForeperiod + 
-                         oneBackFP + numForeperiod:oneBackFP + condition:oneBackFP + condition:oneBackFP:numForeperiod +
-                         (1 + condition | ID),
-                       data=data2,
-                       control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                       progress = TRUE,
-                       expand_re = TRUE,
-                       method =  'KR',
-                       REML=TRUE,
-                       return = "merMod")
+#============= 3.2.1. Using RT ===============
+trimfplmm <- mixed(RT ~ 1 + scaledNumForeperiod + condition + scaledNumForeperiod:condition + 
+                     oneBackFP + scaledNumForeperiod:oneBackFP + scaledNumForeperiod:condition:oneBackFP +
+                     (1 + condition | ID),
+                   data=data2,
+                   control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+                   progress = TRUE,
+                   expand_re = TRUE,
+                   method =  'KR',
+                   REML=TRUE,
+                   return = "merMod")
 
-summary(trimlogfplmm2)
-anova(trimlogfplmm2)
+anova(trimfplmm)
 
 # Pairwise comparisons
-Fp_by_Previous=emtrends(trimlogfplmm2, "oneBackFP", var = "numForeperiod")
+Fp_by_Previous=emtrends(trimfplmm, "oneBackFP", var = "scaledNumForeperiod")
 Fp_by_Previous
 update(pairs(Fp_by_Previous), by = NULL, adjust = "holm")
 
-Fp_by_Previous=emtrends(trimlogfplmm2, c("condition", "oneBackFP"), var = "numForeperiod")
+Fp_by_Previous=emtrends(trimfplmm, c("condition", "oneBackFP"), var = "scaledNumForeperiod")
 Fp_by_Previous
 update(pairs(Fp_by_Previous), by = NULL, adjust = "none")
 
-# Using RT
-trimfplmm2 <- mixed(RT ~ 1 + condition + numForeperiod + condition:numForeperiod + 
-                         oneBackFP + numForeperiod:oneBackFP + condition:oneBackFP + condition:oneBackFP:numForeperiod +
-                         (1 + condition | ID),
-                       data=data2,
-                       control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                       progress = TRUE,
-                       expand_re = TRUE,
-                       method =  'KR',
-                       REML=TRUE,
-                       return = "merMod")
+#============= 3.2.2. Using logRT ===============
+trimlogfplmm <- mixed(logRT ~ 1 + scaledNumForeperiod + condition + scaledNumForeperiod:condition + 
+                        oneBackFP + scaledNumForeperiod:oneBackFP + condition:oneBackFP +
+                        scaledNumForeperiod:condition:oneBackFP + 
+                        (1 + condition + scaledNumForeperiod + scaledNumForeperiod:condition | ID),
+                      data=data2,
+                      control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+                      progress = TRUE,
+                      expand_re = FALSE,
+                      method =  'KR',
+                      REML=TRUE,
+                      return = "merMod")
 
-summary(trimfplmm2)
-anova(trimfplmm2)
+anova(trimlogfplmm)
+
+#Visualize random effects
+dotplot(ranef(trimlogfplmm, condVar = TRUE))
+
+# Visualize interactions
+emmip(trimlogfplmm,
+      oneBackFP ~ condition, style = "factor") # Using averaged FP
+
+emmip(ref_grid(trimlogfplmm, at = list(scaledNumForeperiod = c(1.0, 1.6, 2.2, 2.8))),
+      oneBackFP * scaledNumForeperiod~ condition, style = "factor") # Split by FP (not very informative)
+
+# Single slopes tests
+fp_by_condition <- slopes(trimlogfplmm, by = "condition", variables = "scaledNumForeperiod",
+                          p_adjust = "holm")
+
+test(emtrends(trimlogfplmm, ~ condition, var="scaledNumForeperiod")) # equivalent to slopes
+
+fp_by_oneback <- slopes(trimlogfplmm, by = "oneBackFP", variables = "scaledNumForeperiod",
+                        p_adjust = "holm")
+
+test(emtrends(trimlogfplmm, ~ oneBackFP, var="scaledNumForeperiod")) # equivalent to slopes
+
+threeway_int <- slopes(trimlogfplmm, by = c("oneBackFP", "condition"), variables = "scaledNumForeperiod",
+                       p_adjust = "holm")
+
+
+
 
 # Pairwise comparisons
-Fp_by_Previous=emtrends(trimfplmm2, "oneBackFP", var = "numForeperiod")
+fp_by_condition_comp <- emtrends(trimlogfplmm, "condition", var = "scaledNumForeperiod")
+fp_by_condition_comp
+update(pairs(fp_by_condition_comp), by = NULL, adjust = "holm")
+
+Fp_by_Previous=emtrends(trimlogfplmm, "oneBackFP", var = "scaledNumForeperiod")
 Fp_by_Previous
 update(pairs(Fp_by_Previous), by = NULL, adjust = "holm")
 
-Fp_by_Previous=emtrends(trimfplmm2, c("condition", "oneBackFP"), var = "numForeperiod")
-Fp_by_Previous
-update(pairs(Fp_by_Previous), by = NULL, adjust = "none")
+threeway_int_comp = emtrends(trimlogfplmm, c("condition", "oneBackFP"), var = "scaledNumForeperiod")
+threeway_int_comp
+update(pairs(threeway_int_comp), by = NULL, adjust = "holm")
+pairs(threeway_int_comp, simple = "condition")
+
+# Marginal means for FP by FP n-1 and condition
+oneback_by_cond = emmeans(trimlogfplmm, c("condition", "oneBackFP"))
+oneback_by_cond = emmeans(trimlogfplmm, ~ oneBackFP * condition)
+pairs(oneback_by_cond, simple = "condition")
+
 
 #========================= 3.3. Both FP and FP n-1 as categorical ===================================
 
@@ -665,16 +703,16 @@ contrast(trimlogfplmm3emm[[1]], interaction = c("poly", "consec"), by = "oneBack
 
 #============= 3.3.2. Using RT instead of logRT ================
 trimfplmm3 <- mixed(RT ~ 1 + foreperiod + condition + foreperiod:condition + oneBackFP + 
-                         foreperiod:oneBackFP + condition:oneBackFP + foreperiod:condition:oneBackFP + 
-                         (1 + condition | ID),
-                       data=data2,
-                       control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                       progress = TRUE,
-                       expand_re = TRUE,
-                       method =  'KR',
-                       REML=TRUE,
-                       return = "merMod",
-                       check_contrasts = FALSE)
+                      foreperiod:oneBackFP + condition:oneBackFP + foreperiod:condition:oneBackFP + 
+                      (1 + condition | ID),
+                    data=data2,
+                    control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+                    progress = TRUE,
+                    expand_re = TRUE,
+                    method =  'KR',
+                    REML=TRUE,
+                    return = "merMod",
+                    check_contrasts = FALSE)
 
 isSingular(trimfplmm3)
 summary(trimfplmm3)
