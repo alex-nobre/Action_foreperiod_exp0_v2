@@ -34,7 +34,7 @@ data <- read_csv("./Analysis/dataActionFPAll.csv")
 data <- data %>%
   dplyr::select(ID, Acc, condition, block, orientation,
                 foreperiod, RT, counterbalance, 
-                extFixationDuration, action_trigger.rt,
+                extFixationDuration, action_trigger.rt, ITI,
                 oneBackFP, twoBackFP, oneBackEffect)
 
 # Coerce to factors
@@ -97,6 +97,10 @@ data <- data %>%
          prevOri = lag(orientation)) %>%
   mutate(seqOri = as.factor(seqOri),
          prevOri = as.factor(prevOri))
+
+# Create column for total ITI depending on condition
+data <- data %>%
+  mutate(ITItotal = ifelse(condition == 'action', ITI + action_trigger.rt, ITI + extFixationDuration))
 
 
 # Remove trials without n-1 FP values (i.e., first of each block)
@@ -220,7 +224,8 @@ summaryData <- data %>%
             meanLogRT = mean(logRT),
             meanRTzscore = mean(RTzscore),
             meanInvRT = mean(invRT),
-            meanSeqEff = mean(oneBackEffect)) %>% #,
+            meanSeqEff = mean(oneBackEffect),
+            meanITITotal = mean(ITItotal)) %>% #,
             #meanDelay = mean(delay)) %>%
   ungroup() %>%
   mutate(numForeperiod = as.numeric(as.character(foreperiod)),
@@ -245,7 +250,8 @@ summaryData2 <- data2 %>%
             meanLogRT = mean(logRT),
             meanRTzscore = mean(RTzscore),
             meanInvRT = mean(invRT),
-            meanSeqEff = mean(oneBackEffect)) %>% #,
+            meanSeqEff = mean(oneBackEffect),
+            meanITITotal = mean(ITItotal)) %>% #,
             #meanDelay = mean(delay)) %>%
   ungroup() %>%
   mutate(numForeperiod = as.numeric(as.character(foreperiod)),
@@ -268,7 +274,8 @@ summaryDataAcc <- dataAcc %>%
   summarise(meanRT = mean(RT),
             meanAcc = mean(Acc),
             errorRate = mean(Error),
-            meanSeqEff = mean(oneBackEffect)) %>% #,
+            meanSeqEff = mean(oneBackEffect),
+            meanITITotal = mean(ITItotal)) %>% #,
             #meanDelay = mean(delay)) %>%
   ungroup() %>%
   mutate(numForeperiod = as.numeric(as.character(foreperiod)),

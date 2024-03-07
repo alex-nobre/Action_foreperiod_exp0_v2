@@ -15,7 +15,7 @@ import os
 
 # File paths
 filesPath = '.\Data'
-gDrivePath = 'G:/My Drive/Post-doc/Projetos/Action_foreperiod/Experimento_0_v2/Analysis/'
+gDrivePath = 'G:/My Drive/Post-doc/Projetos/Action_foreperiod/Experimento_2/Analysis/'
 
 # Find files
 FileList=glob.glob(filesPath + '/*.csv')
@@ -33,12 +33,13 @@ for iFile,FileName in enumerate(FileList):
     ID=FileName[7:10]
          
     # Remove unnecessary columns
-    dataActionFP = dataActionFP[['participant', 'date', 'Response.corr', 'blockCondition', 'block', 'orientation', 'foreperiod', 'corrAns', 'Response.rt', 'action_trigger.rt', 'Response.keys', 'counterbalance', 'extFixationDuration']]
+    dataActionFP = dataActionFP[['participant', 'date', 'Response.corr', 'blockCondition', 'block', 'orientation', 'foreperiod', 'corrAns', 'Response.rt', 'action_trigger.rt', 'Response.keys', 'counterbalance', 'extFixationDuration', 'ITIDuration']]
     
     # Rename columns for clarity
     dataActionFP = dataActionFP.rename(columns={'blockCondition':'condition'})
     dataActionFP = dataActionFP.rename(columns={'Response.rt':'RT'})
     dataActionFP = dataActionFP.rename(columns={'Response.corr':'Acc'})
+    dataActionFP = dataActionFP.rename(columns={'ITIDuration' : 'ITI'})
     
     # Remove practice trials
     dataActionFP = dataActionFP[(dataActionFP['condition'] != 'practice') & (dataActionFP['condition'].notnull())]

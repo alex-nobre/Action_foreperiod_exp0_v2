@@ -192,6 +192,22 @@ ggsave("./Analysis/Plots/actiontrigpress.png",
        width = 13.4,
        height = 10)
 
+# Correlation between RT and total ITI
+ggplot(data = data2,
+       aes(x = ITItotal,
+           y = RT,
+           color = condition)) +
+  geom_jitter(alpha = 0.3) +
+  theme(axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.8)),
+        strip.text = element_text(size = rel(1.8)),
+        legend.text = element_text(size = rel(1.5)),
+        legend.title = element_text(size = rel(1.8))) +
+  labs(x = "Total ITI",
+       y = "RT") +
+  facet_wrap(~foreperiod) +
+  scale_color_manual(values = c("orange", "blue"))
+
 # Plot data by foreperiod only to ascertain that there is an FP effect
 ggplot(data = summaryData,
        aes(x = foreperiod,

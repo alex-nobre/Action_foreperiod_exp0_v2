@@ -53,7 +53,7 @@ emm_options(lmer.df = "satterthwaite", lmerTest.limit = 12000)
 
 #================================== 0. Read data ================================
 # Create dataset
-source('./Analysis/Prepare_data_exp0_v2_6.R')
+source('./Analysis/Prepare_data_6.R')
 
 # Set contrasts
 contrasts(data$foreperiod) <- contr.treatment(4)-matrix(rep(1/4,12),ncol=3)
@@ -214,218 +214,6 @@ ggplot(data = dataGroupedByRT,
 #====================================== 2. Prepare model ====================================
 #==========================================================================================#
 
-#=========================== 2.1. Choose dependent variable =============================
-# We use the strategy of keeping it maximal to find a model that converges and progressively
-# remove terms, one of the strategies recommended to avoid overfitting:
-# https://rdrr.io/cran/lme4/man/isSingular.html
-
-#  Trying to fit the model using foreperiod and FPn-1 as factors results
-# in R hanging during execution; for this reason, we use them as
-# numerical variables
-
-# To choose the data transformation that leads to the optimal random effects structure, we fit models including only 
-# random intercepts and compare R2 and residuals
-
-# Fit models with RT and inverse RT without trimming
-options(scipen = 999)
-
-fplmm1 <- mixed(formula = RT ~ numForeperiod*condition*numOneBackFP + 
-                  (1|ID),
-                data = data,
-                control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                progress = TRUE,
-                expand_re = TRUE,
-                method =  'S',
-                REML=TRUE,
-                return = "merMod")
-
-summary(fplmm1)
-
-
-# Now we run the same model with inverse RT and logRT as outcomes
-invfplmm1 <- mixed(formula = invRT ~ numForeperiod*condition*numOneBackFP + 
-                     (1|ID),
-                   data = data,
-                   control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                   progress = TRUE,
-                   expand_re = TRUE,
-                   method =  'S',
-                   REML=TRUE,
-                   return = "merMod")
-
-logfplmm1 <- mixed(formula = logRT ~ numForeperiod*condition*numOneBackFP + 
-                     (1|ID),
-                   data = data,
-                   control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                   progress = TRUE,
-                   expand_re = TRUE,
-                   method =  'S',
-                   REML=TRUE,
-                   return = "merMod")
-
-# Let's check that the current structure does not provide a singular fit:
-isSingular(fplmm1)
-isSingular(invfplmm1)
-isSingular(logfplmm1)
-
-# None of them return singular fits!
-
-# Amount of variance accounted for by the model
-var <- data.frame(dataset = 'no trim',
-                  'RT' = cor(fitted(fplmm1), data$RT)^2,
-                  'invRT' = cor(fitted(invfplmm1), data$invRT)^2,
-                  'logRT' = cor(fitted(logfplmm1), data$logRT)^2)
-
-
-# Check normality of residuals
-par(mfrow=c(1,3))
-qqnorm(resid(fplmm1),
-       main="Normal q-qplot fplmm1")
-qqnorm(resid(invfplmm1),
-       main="Normal q-qplot invfplmm1")
-qqnorm(resid(logfplmm1),
-       main="Normal q-qplot logfplmm1")
-
-par(graphical_defaults)
-
-# All models show departures from normality, although this is slightly less for log RT
-
-# Plot residuals
-par(mfrow=c(3,1))
-plot(resid(fplmm1), fitted(fplmm1),
-     main="Residuals fplmm1")
-plot(resid(invfplmm1), fitted(invfplmm1),
-     main="Residuals invfplmm1")
-plot(resid(logfplmm1), fitted(logfplmm1),
-     main="Residuals logfplmm1")
-
-par(graphical_defaults)
-# There are no clear correlations
-
-# Residual histograms
-grid.arrange(hist_resid(fplmm1, 'RT'),
-             hist_resid(invfplmm1, '1/RT'),
-             hist_resid(logfplmm1, 'logRT'),
-             ncol=1)
-
-# All appear to be relatively normally distributed, with a slight positive skew
-
-# Fit models with RT and inverse RT without trimming
-trimfplmm1 <- mixed(formula = RT ~ numForeperiod*condition*numOneBackFP + 
-                      (1|ID),
-                    data = data2,
-                    control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                    progress = TRUE,
-                    expand_re = TRUE,
-                    method =  'S',
-                    REML=TRUE,
-                    return = "merMod")
-
-
-# Now we run the same model with inverse RT and logRT as outcomes
-triminvfplmm1 <- mixed(formula = invRT ~ numForeperiod*condition*numOneBackFP + 
-                         (1|ID),
-                       data = data2,
-                       control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                       progress = TRUE,
-                       expand_re = TRUE,
-                       method =  'S',
-                       REML=TRUE,
-                       return = "merMod")
-
-# Now we run the same model with inverse RT and logRT as outcomes
-trimlogfplmm1 <- mixed(formula = logRT ~ numForeperiod*condition*numOneBackFP + 
-                         (1|ID),
-                       data = data2,
-                       control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                       progress = TRUE,
-                       expand_re = TRUE,
-                       method =  'S',
-                       REML=TRUE,
-                       return = "merMod")
-
-isSingular(trimfplmm1)
-isSingular(triminvfplmm1)
-isSingular(trimlogfplmm1)
-
-# No singular fits here either
-
-# Amount of variance accounted for by the model
-var <- rbind(var,
-             data.frame(dataset = 'trim',
-                        'RT' = cor(fitted(trimfplmm1), data2$RT)^2,
-                        'invRT' = cor(fitted(triminvfplmm1), data2$invRT)^2,
-                        'logRT'= cor(fitted(trimlogfplmm1), data2$logRT)^2))
-
-
-var
-# Again, the log model accounts for a larger amount of the variance, although this difference is pretty small
-
-# check normality
-par(mfrow=c(2,3))
-qqnorm(resid(fplmm1),
-       main="Normal q-qplot fplmm1")
-qqnorm(resid(invfplmm1),
-       main="Normal q-qplot invfplmm1")
-qqnorm(resid(logfplmm1),
-       main="Normal q-qplot logfplmm1")
-qqnorm(resid(trimfplmm1),
-       main="Normal q-qplot trimfplmm")
-qqnorm(resid(triminvfplmm1),
-       main="Normal q-qplot triminvfplmm")
-qqnorm(resid(trimlogfplmm1),
-       main="Normal q-qplot trimlogfplmm")
-par(graphical_defaults)
-
-# The log plots show the least deviations from normality, and trimming does seem to help a bit
-
-# Plot residuals
-par(mfrow=c(3,2))
-plot(resid(fplmm1), fitted(fplmm1),
-     main="Residuals RT")
-plot(resid(invfplmm1), fitted(invfplmm1),
-     main="Residuals 1/RT")
-plot(resid(logfplmm1), fitted(logfplmm1),
-     main="Residuals logRT")
-plot(resid(trimfplmm1), fitted(trimfplmm1),
-     main="Residuals trimmed RT")
-plot(resid(triminvfplmm1), fitted(triminvfplmm1),
-     main="Residuals trimmed 1/RT")
-plot(resid(trimlogfplmm1), fitted(trimlogfplmm1),
-     main="Residuals trimmed logRT")
-par(graphical_defaults)
-
-# LIttle difference after trimming, although outliers are rarer; logRT still appears to perform better
-grid.arrange(hist_resid(fplmm1, 'RT'),
-             hist_resid(invfplmm1, '1/RT'),
-             hist_resid(logfplmm1, 'logRT'),
-             hist_resid(trimfplmm1, 'trimmed RT'),
-             hist_resid(triminvfplmm1, 'trimmed 1/RT'),
-             hist_resid(trimlogfplmm1, 'trimmed logRT'),
-             ncol=2,
-             as.table=FALSE)
-
-# The same pattern is apparent as in the model with no trimming
-
-R2table <- fitstats(fplmm1, 'RT') %>%
-  plyr::join(., fitstats(invfplmm1, '1/(RT)'), by='stat') %>%
-  plyr::join(., fitstats(logfplmm1, 'log(RT)'), by='stat') %>%
-  plyr::join(., fitstats(trimfplmm1, 'trim RT'), by='stat') %>%
-  plyr::join(., fitstats(triminvfplmm1, 'trim 1/(RT)'), by='stat') %>%
-  plyr::join(., fitstats(trimlogfplmm1, 'trim log(RT)'), by='stat') %>%
-  kable(digits=4)
-
-# Indeed, the model using trimmed logRT performs best according to fit. All R2 are very low 
-
-
-
-# Variance explained is higher with trimming, although this is probably not significant
-# Q-q plots are better with trimming
-# Residuals are less correlated with fitted values with trimming
-# Residuals are more normally distributed with trimming
-
-# The model with inverse RT performs better than the one with RT
-
 #================================= 2.2. Find random effects structure ==========================
 
 #=========================== 2.2.1. FP and FP n-1 as numerical ============================
@@ -489,18 +277,6 @@ cor(fitted(trimlogfplmm1), data2$logRT)^2
 cor(fitted(trimlogfplmm2), data2$logRT)^2
 cor(fitted(trimlogfplmm3), data2$logRT)^2
 
-
-#===================== 2.2.2. Using FP n-1 as categorical (for emm comparisons) ===================
-trimlogfplmm2 <- buildmer(logRT ~ numForeperiod * condition * oneBackFP + 
-                            (1+numForeperiod*condition*oneBackFP|ID), 
-                          data=data2,
-                          buildmerControl = list(direction='backward',
-                                                 crit='LRT',#ddf = "Satterthwaite",
-                                                 family=gaussian(link = 'identity'),
-                                                 calc.anova = TRUE))
-
-isSingular(trimlogfplmm2)
-formula(trimlogfplmm2)
 
 
 #==========================  2.2.3. Both FP and FP n-1 as categorical ===============================
@@ -578,7 +354,7 @@ slopes(trimfplmm1)
 #============= 3.2.1. Using RT ===============
 trimfplmm <- mixed(RT ~ 1 + scaledNumForeperiod + condition + scaledNumForeperiod:condition + 
                      oneBackFP + scaledNumForeperiod:oneBackFP + scaledNumForeperiod:condition:oneBackFP +
-                     (1 + condition | ID),
+                     (1 + scaledNumForeperiod + condition | ID),
                    data=data2,
                    control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
                    progress = TRUE,
