@@ -1552,3 +1552,74 @@ isSingular(trimprevfplonglmm1)
 
 summary(trimprevfplonglmm1)
 anova(trimprevfplonglmm1)
+
+#===============================================================================================#
+#=================================== Analyses with smaller N ====================================
+#===============================================================================================#
+
+nPartsExp3 <- 28
+nReps <- 1000
+pValues <- vector(mode = "numeric", length = nReps)
+
+# Sample 28 participants nReps times and fit mixed model for each sample, extracting p-value of comparison of interest
+for(iRep in 1:nReps) {
+  
+  # Sample participants
+  sampParts <- sample(levels(data2$ID), nPartsExp3)
+  sampData <- data2 %>%
+    filter(ID %in% sampParts)
+  
+  # Recompute scaled variables (which were de-centered by trimming)
+  sampData$squaredNumForeperiod <-  (sampData$numForeperiod)^2
+  sampData$squaredNumOneBackFP <- (sampData$numOneBackFP)^2
+  sampData$scaledNumForeperiod <-  scale(sampData$numForeperiod, scale = FALSE)[,1]
+  sampData$squaredScaledNumForeperiod <- (sampData$scaledNumForeperiod)^2
+  sampData$scaledNumOneBackFP <- scale(sampData$numOneBackFP, scale = FALSE)[,1]
+  
+  
+  # Fit model using same structure as before
+  sampLmm <- mixed(formula = logRT ~ 1 + scaledNumForeperiod + oneBackFP + scaledNumForeperiod:oneBackFP + 
+                     condition + scaledNumForeperiod:condition + oneBackFP:condition + 
+                     scaledNumForeperiod:oneBackFP:condition + 
+                     (1 + condition + scaledNumForeperiod | ID),
+                   data=sampData,
+                   control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+                   progress = TRUE,
+                   expand_re = FALSE,
+                   method =  'KR',
+                   REML=TRUE,
+                   return = "merMod")
+  
+  
+  # Run anova and extract p-value
+  sampAnova <- anova(sampLmm)
+  #pValues[iRep] <- sampAnova['scaledNumForeperiod:oneBackFP:condition',]$`Pr(>F)`
+  pValues[iRep] <- sampAnova['scaledNumForeperiod:condition',]$`Pr(>F)`
+  
+}
+
+# Get p-value of comparison with full sample
+trimlogfplmm <- mixed(logRT ~ 1 + scaledNumForeperiod + condition + scaledNumForeperiod:condition + 
+                        oneBackFP + scaledNumForeperiod:oneBackFP + condition:oneBackFP +
+                        scaledNumForeperiod:condition:oneBackFP + 
+                        (1 + condition + scaledNumForeperiod + scaledNumForeperiod:condition | ID),
+                      data=data2,
+                      control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+                      progress = TRUE,
+                      expand_re = FALSE,
+                      method =  'KR',
+                      REML=TRUE,
+                      return = "merMod")
+
+stdAnova <- anova(trimlogfplmm)
+
+# Plot sampled values against original values
+jpeg("./Analysis/Plots/Smaller_sample_analyses/28_parts_1000_sims.jpg", width = 20, height = 12, units = "cm", res = 300)
+hist(pValues, breaks = 100, col = "lightblue",
+     main = "Exp. 2: p-Values for sample size = 28 (1000 simulations)")
+#abline(v = stdAnova['scaledNumForeperiod:oneBackFP:condition',]$`Pr(>F)`, lwd = 2)
+abline(v = stdAnova['scaledNumForeperiod:condition',]$`Pr(>F)`, lwd = 2)
+abline(v = 0.05, lwd = 2, lty = 2)
+text(x = 0.025, y = 600, labels = "p-value for full sample")
+text(x = 0.06, y = 600, labels = "p = .05")
+dev.off()

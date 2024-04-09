@@ -19,7 +19,7 @@ library(broom.mixed)
 library(brms)
 
 
-source('G:/My Drive/Post-doc/Projetos/Action_foreperiod/Experimento_0_v2/Analysis/Prepare_data_3.R')
+source('./Analysis/Prepare_data_6.R')
 
 #==========================================================================================#
 #================================= 2. Explore individual data ==============================
