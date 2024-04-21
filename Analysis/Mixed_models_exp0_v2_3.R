@@ -387,6 +387,7 @@ trimlogfplmm <- mixed(logRT ~ 1 + scaledNumForeperiod + condition + scaledNumFor
                       REML=TRUE,
                       return = "merMod")
 
+saveRDS(trimlogfplmm, "./Analysis/trimlogfplmm.RDS")
 anova(trimlogfplmm)
 
 #Visualize random effects
@@ -1554,7 +1555,18 @@ summary(trimprevfplonglmm1)
 anova(trimprevfplonglmm1)
 
 #===============================================================================================#
-#=================================== Analyses with smaller N ====================================
+#============================= 9. Analyses using exp(-foreperiod) ==============================
+#===============================================================================================#
+trimexpfplmm1 <- buildmer(RT ~ expFP * condition * oneBackFP + 
+                            (1+expFP*condition*oneBackFP|ID), 
+                          data=data2,
+                          buildmerControl = list(direction='backward',
+                                                 crit='LRT',#ddf = "Satterthwaite",
+                                                 family=gaussian(link = 'identity'),
+                                                 calc.anova = TRUE))
+
+#===============================================================================================#
+#=================================== 9. Analyses with smaller N ====================================
 #===============================================================================================#
 
 nPartsExp3 <- 28

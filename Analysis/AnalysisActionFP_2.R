@@ -15,6 +15,7 @@ library(gridExtra)
 library(gridGraphics)
 library(ggdist)
 library(ggpubr)
+library(viridis)
 
 # Descriptives
 library(Hmisc)
@@ -614,7 +615,7 @@ ggplot2::ggsave("./Analysis/Plots/RT_by_condition.png",
 
 
 # using LogRT
-rt_by_condition <- ggplot(data = summaryData2 %>% 
+logrt_by_condition <- ggplot(data = summaryData2 %>% 
                             group_by(ID, foreperiod, condition) %>% 
                             summarise(meanLogRT = mean(meanLogRT)),
                           aes(x = foreperiod,
@@ -633,6 +634,31 @@ rt_by_condition <- ggplot(data = summaryData2 %>%
         panel.grid.minor = element_blank(),
         panel.background = element_blank()) +
   scale_color_manual(values = c("orange","blue"))
+
+# Using exp(-foreperiod)
+rt_by_expfp_condition <- ggplot(data = summaryData2 %>% 
+                            group_by(ID, expFP, condition) %>% 
+                            summarise(meanRT = mean(meanRT)),
+                          aes(x = expFP,
+                              y = meanRT,
+                              color = condition)) +
+  geom_jitter(height = 0, width = 0.005, alpha = 0.5) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1.4, aes(group = condition)) +
+  stat_summary(fun.data = "mean_se", linewidth = 1.2, width = 0.02, geom = "errorbar") +
+  labs(title = "RT",
+       x = "exp(-FP)", 
+       y = "Mean RT",
+       color = "Condition") +
+  theme(plot.title = element_text(size = 14, hjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  scale_color_manual(values = c("orange","blue"))
+ggsave("./Analysis/Plots/rt_by_expfp_condition.png",
+       rt_by_expfp_condition,
+       width = 8.5, height = 5.7)
+
 
 # FP and condition
 sd_by_condition <- ggplot(data = data2 %>% 
@@ -679,7 +705,7 @@ ggplot(data = summaryData2 %>%
         panel.background = element_blank(),
         axis.text = element_text(size = rel(1.5)),
         axis.title = element_text(size = rel(1.5)))+
-  scale_color_manual(values = c('blue','orange','green', 'magenta'))
+  scale_color_viridis(discrete = TRUE)
 ggsave("./Analysis/Plots/seqeff.png",
        width = 8.5,
        height = 5.7)
@@ -703,7 +729,7 @@ ggplot(data = summaryData2 %>%
         axis.text = element_text(size = rel(1.5)),
         axis.title = element_text(size = rel(1.5))) +
   facet_wrap(~condition) +
-  scale_color_manual(values = c('blue','orange','green', 'magenta'))
+  scale_color_viridis(discrete = TRUE)
 
 ggsave("./Analysis/Plots/seqeff_by_condition.tiff",
        width = 20,
@@ -760,8 +786,64 @@ ggsave("./Analysis/Plots/SeqEff.pdf",
        height = 8.33,
        units = "cm")
 
+# FP n-2
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = meanRT,
+           color = twoBackFP)) +
+  stat_summary(fun = "mean", geom = "point", size = 1.5) +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.6, aes(group = twoBackFP)) +
+  stat_summary(fun.data = "mean_cl_boot", size = 0.3, width = 0.05, geom = "errorbar") +
+  labs(x = "Foreperiod",
+       y = "Mean RT",
+       color = "FP n-2") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5))) +
+  facet_wrap(~condition) +
+  scale_color_viridis(discrete = TRUE)
+
+# Sequential effects with difference between current and previous FP
+# Using value of difference as variable
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = meanRT,
+           color = oneBackFPDiff)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = oneBackFPDiff)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5))) +
+  scale_color_viridis(discrete = TRUE, begin = 0.4) +
+  facet_wrap(~condition, )
+
+
+# Using prevFPLonger
+ggplot(data = summaryData2,
+       aes(x = prevFPLonger,
+           y = meanRT,
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5))) +
+  scale_color_manual(values = c("orange","blue")) 
+
 
 #================== 2.2.3. Accuracy ===================
+ggplot(data = summaryDataAcc) +
+  geom_histogram(aes(x = meanAcc)) +
+  facet_grid(foreperiod ~ condition)
+
 # Error rates
 error_by_condition <- ggplot(data = summaryDataAcc %>%
                                    group_by(ID, foreperiod, condition) %>%
@@ -853,6 +935,156 @@ ggsave("./Analysis/Plots/rt_error_plots.pdf",
        height = 11.11,
        unit = "cm")
 
+# Sequential effects on accuracy
+ggplot(data = summaryDataAcc,
+       aes(x = foreperiod,
+           y = meanAcc,
+           color = oneBackFP)) +
+  labs(title = "Accuracy (proportion of correct responses)",
+       x = "Foreperiod",
+       y = "Mean Acc",
+       color = "FP n-1") +
+  stat_summary(fun = "mean", geom = "point", size = 1.8) +
+  stat_summary(fun = "mean", geom = "line", aes(group = oneBackFP), linewidth = 0.8) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", linewidth = 0.7, width = 0.05) +
+  theme(plot.title = element_text(size = 14, hjust = 0.5),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.2)),
+        axis.title = element_text(size = rel(1.2))) +
+  scale_color_viridis(discrete = TRUE) +
+  facet_wrap(~ condition)
+ggsave("./Analysis/Plots/seqeff_by_condition.png",
+       width = 7.5,
+       height = 5)
+
+
+#======================== 2.2.4. Orientation effects =================================
+
+# RT by alternation vs repetition
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = meanRT,
+           color = seqOri)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = seqOri)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  scale_color_manual(values = c("lightgoldenrod1","indianred2"))
+
+# RT by alternation vs repetition and condition
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = meanRT,
+           color = seqOri)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = seqOri)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.8)),
+        legend.text = element_text(size = rel(1.5)),
+        legend.title = element_text(size = rel(1.8)),
+        strip.text = element_text(size = rel(1.8))) +
+  facet_wrap(~ condition) +
+  scale_color_manual(values = c("lightgoldenrod1","indianred2"))
+ggsave("./Analysis/Plots/RT_by_repxalt_condition.png",
+       width= 13.4,
+       height = 10)
+
+
+# Previous orientation vs left/right
+ggplot(data = summaryData2,
+       aes(x = orientation,
+           y = meanRT,
+           color = prevOri)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = prevOri)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  scale_color_manual(values = c("lightgoldenrod1","indianred2"))
+
+
+# Orientation
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = meanRT,
+           color = orientation)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = orientation)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.8)),
+        legend.text = element_text(size = rel(1.5)),
+        legend.title = element_text(size = rel(1.8))) +
+  scale_color_manual(values = c("lightgoldenrod1","indianred2"))
+ggsave("./Analysis/Plots/RT_by_orientation.png",
+       width= 13.4,
+       height = 10)
+
+# Orientation vs condition
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = meanRT,
+           color = orientation)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = orientation)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.8)),
+        legend.text = element_text(size = rel(1.5)),
+        legend.title = element_text(size = rel(1.8)),
+        strip.text = element_text(size = rel(1.8))) +
+  facet_wrap(~condition) +
+  scale_color_manual(values = c("lightgoldenrod1","indianred2"))
+ggsave("./Analysis/Plots/RT_by_orientation_condition.png",
+       width= 13.4,
+       height = 10)
+
+
+
+#===================== 2.4. Plots for between-experiments comparisons ========================
+extrFPData <- summaryData2 %>%
+  filter(foreperiod %in% c("1000", "2800")) %>%
+  mutate(foreperiod = fct_relevel(foreperiod, c("1000", "2800")))
+
+rt_extr_fps_part <- ggplot(data = extrFPData,
+                           aes(x = foreperiod,
+                               y = meanRT,
+                               color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.8, aes(group = condition)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", linewidth = 0.8, width = 0.2) +
+  labs(title = "RT by condition",
+       x = "Foreperiod",
+       y = "Mean RT",
+       color = "Condition") +
+  theme(plot.title = element_text(size = 14, hjust = 0.5),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(0.8)),
+        axis.title = element_text(size = rel(1.2))) +
+  scale_color_manual(values = c("orange", "blue"), labels = c("External", "Action")) +
+  facet_wrap(~ ID)
+
+ggsave("./Analysis/Plots/rt_extr_fps_part.png",
+       rt_extr_fps_part,
+       width = 6.7,
+       height = 5)
 
 #==========================================================================================#
 #======================================= 3. ANOVAs =========================================
@@ -993,24 +1225,6 @@ nice(logSeqEffAnova,
      correction = "none")
 
 # 2.2.3. FP n-2
-ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanRT,
-           color = twoBackFP)) +
-  stat_summary(fun = "mean", geom = "point", size = 1.5) +
-  stat_summary(fun = "mean", geom = "line", linewidth = 0.6, aes(group = twoBackFP)) +
-  stat_summary(fun.data = "mean_cl_boot", size = 0.3, width = 0.05, geom = "errorbar") +
-  labs(x = "Foreperiod",
-       y = "Mean RT",
-       color = "FP n-2") +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.5))) +
-  facet_wrap(~condition) +
-  scale_color_manual(values = c('blue','orange','green', 'magenta'))
-
 twoBackAnova <- aov_ez(id = "ID",
                       dv = "meanRT",
                       data = summaryData2,
@@ -1025,72 +1239,8 @@ summary(ntworegression)
 anova(ntworegression)
 Anova(ntworegression, type = "II")
 
-# Effects of previous orientation
-ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanRT,
-           color=prevOri)) +
-  stat_summary(fun = "mean", geom = "point", size = 1.5) +
-  stat_summary(fun = "mean", geom = "line", linewidth = 0.8, aes(group = prevOri)) +
-  stat_summary(fun.data = "mean_cl_boot", size = 0.8, width = 0.2, geom = "errorbar") +
-  labs(x = "Foreperiod",
-       y = "Mean RT",
-       color = "Previous Orientation") +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.5))) +
-  facet_wrap(~condition) +
-  scale_color_manual(values = c('blue', 'orange'))
-
-ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanRT,
-           color=seqOri)) +
-  stat_summary(fun = "mean", geom = "point", size = 1.5) +
-  stat_summary(fun = "mean", geom = "line", linewidth = 0.8, aes(group = seqOri)) +
-  stat_summary(fun.data = "mean_cl_boot", size = 0.8, width = 0.2, geom = "errorbar") +
-  labs(x = "Foreperiod",
-       y = "Mean RT",
-       color = "Previous Orientation") +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.5))) +
-  facet_wrap(~condition) +
-  scale_color_manual(values = c('blue', 'orange'))
-
 
 #============= 3.2.2. Accuracy =================
-ggplot(data = summaryDataAll,
-       aes(x = foreperiod,
-           y = meanAcc,
-           color = oneBackFP)) +
-  labs(title = "Accuracy (proportion of correct responses)",
-       x = "Foreperiod",
-       y = "Mean Acc",
-       color = "FP n-1") +
-  stat_summary(fun = "mean", geom = "point", size = 1.8) +
-  stat_summary(fun = "mean", geom = "line", aes(group = oneBackFP), linewidth = 0.8) +
-  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", linewidth = 0.7, width = 0.05) +
-  theme(plot.title = element_text(size = 14, hjust = 0.5),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.2)),
-        axis.title = element_text(size = rel(1.2))) +
-  scale_color_manual(values = c("orange", "blue", "green", "magenta")) +
-  facet_wrap(~ condition)
-ggsave("./Analysis/Plots/seqeff_by_condition.png",
-       width = 7.5,
-       height = 5)
-
-ggplot(data = summaryDataAll) +
-  geom_histogram(aes(x = meanAcc)) +
-  facet_grid(foreperiod ~ condition)
-
 AccAnova <- aov_ez(id = "ID",
                    dv = "meanAcc",
                    data = summaryDataAll,
@@ -1127,53 +1277,6 @@ summary(logfpAnovaExt2, correction = 'none')
 summary(seqEffAnovaExt2, correction = 'none')
 
 #=================== 3.3 Sequential effects with difference between current and previous FP ============
-# Using value of difference as variable
-ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanRT,
-           color = oneBackFPDiff)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = oneBackFPDiff)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.5))) +
-  #scale_color_manual(values = c("orange","blue")) +
-  facet_wrap(~condition)
-
-# using RT difference as DV
-ggplot(data = summaryData2,
-       aes(x = numOneBackFPDiff,
-           y = meanSeqEff,
-           color = condition)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.5))) +
-  scale_color_manual(values = c("orange","blue"))
-
-# Using prevFPLonger
-ggplot(data = summaryData2,
-       aes(x = prevFPLonger,
-           y = meanRT,
-           color = condition)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.5))) +
-  scale_color_manual(values = c("orange","blue")) 
-
-
 # lm with difference between the durations of FPn and FPn-1 as regressor
 fpDiffRegression <- lm(meanRT ~ foreperiod * condition * oneBackFPDiff,
                        data = summaryData)
@@ -1207,100 +1310,6 @@ logfpAnova2 <- aov_ez(id = "ID",
 # Error because there are empty cells
 
 #=============================== 3.4 Orientation ===================================
-
-# RT by alternation vs repetition
-ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanRT,
-           color = seqOri)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = seqOri)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank()) +
-  scale_color_manual(values = c("lightgoldenrod1","indianred2"))
-
-# RT by alternation vs repetition and condition
-ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanRT,
-           color = seqOri)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = seqOri)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.8)),
-        legend.text = element_text(size = rel(1.5)),
-        legend.title = element_text(size = rel(1.8)),
-        strip.text = element_text(size = rel(1.8))) +
-  facet_wrap(~ condition) +
-  scale_color_manual(values = c("lightgoldenrod1","indianred2"))
-ggsave("./Analysis/Plots/RT_by_repxalt_condition.png",
-       width= 13.4,
-       height = 10)
-
-
-# Previous orientation vs left/right
-ggplot(data = summaryData2,
-       aes(x = orientation,
-           y = meanRT,
-           color = prevOri)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = prevOri)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank()) +
-  scale_color_manual(values = c("lightgoldenrod1","indianred2"))
-
-
-# Orientation
-ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanRT,
-           color = orientation)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = orientation)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.8)),
-        legend.text = element_text(size = rel(1.5)),
-        legend.title = element_text(size = rel(1.8))) +
-  scale_color_manual(values = c("deeppink3","chartreuse3"))
-ggsave("./Analysis/Plots/RT_by_orientation.png",
-       width= 13.4,
-       height = 10)
-
-# Orientation vs condition
-ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanRT,
-           color = orientation)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = orientation)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.8)),
-        legend.text = element_text(size = rel(1.5)),
-        legend.title = element_text(size = rel(1.8)),
-        strip.text = element_text(size = rel(1.8))) +
-  facet_wrap(~condition) +
-  scale_color_manual(values = c("deeppink3","chartreuse3"))
-ggsave("./Analysis/Plots/RT_by_orientation_condition.png",
-       width= 13.4,
-       height = 10)
-
-# No apparent difference
 oriAnova <- aov_ez(id = 'ID',
                    dv = 'meanRT',
                    data = summaryData2,
@@ -2661,35 +2670,5 @@ t.test(params_external[,3]) # logfp 3
 t.test(params_external[,4]) # logfp 4
 t.test(params_external[,5]) # fp diff
 
-#==========================================================================================#
-#===================== 3. Plots for between-experiments comparisons ========================
-#==========================================================================================#
-extrFPData <- summaryData2 %>%
-  filter(foreperiod %in% c("1000", "2800")) %>%
-  mutate(foreperiod = fct_relevel(foreperiod, c("1000", "2800")))
 
-rt_extr_fps_part <- ggplot(data = extrFPData,
-                              aes(x = foreperiod,
-                                  y = meanRT,
-                                  color = condition)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 0.8, aes(group = condition)) +
-  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", linewidth = 0.8, width = 0.2) +
-  labs(title = "RT by condition",
-       x = "Foreperiod",
-       y = "Mean RT",
-       color = "Condition") +
-  theme(plot.title = element_text(size = 14, hjust = 0.5),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(0.8)),
-        axis.title = element_text(size = rel(1.2))) +
-  scale_color_manual(values = c("orange", "blue"), labels = c("External", "Action")) +
-  facet_wrap(~ ID)
-
-ggsave("./Analysis/Plots/rt_extr_fps_part.png",
-       rt_extr_fps_part,
-       width = 6.7,
-       height = 5)
 

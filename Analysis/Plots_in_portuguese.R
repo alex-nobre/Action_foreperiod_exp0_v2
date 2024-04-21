@@ -39,9 +39,9 @@ options_defaults <- options()
 
 
 # Prepare data 
-source('./Analysis/Prepare_data_6.R')
+source('./Analysis/Prepare_data_4.R')
 
-# RT by FP and condition em portugues
+# Em portugues
 RT_by_condition_port <- ggplot(data = summaryData2 %>% 
                                  group_by(ID, foreperiod, condition) %>% 
                                  summarise(meanRT = mean(meanRT)),
@@ -52,7 +52,7 @@ RT_by_condition_port <- ggplot(data = summaryData2 %>%
   stat_summary(fun = "mean", geom = "point") +
   stat_summary(fun = "mean", geom = "line", linewidth = 3.9, aes(group=condition)) +
   stat_summary(fun.data = "mean_cl_boot", linewidth = 3.7, width = 0.1, geom = "errorbar") + 
-  labs(title = "Experimento 2",
+  labs(title = "Experimento 1",
        x = "FP (s)",
        y = "TR médio (s)",
        color = "Condição") +
@@ -72,6 +72,7 @@ RT_by_condition_port <- ggplot(data = summaryData2 %>%
         legend.position = "none") +
   scale_color_manual(values = c("orange", "blue"), labels = c("Externa", "Ação"))
 
+# Save
 ggplot2::ggsave("./Analysis/Plots/RT_by_condition_port.tiff",
                 RT_by_condition_port,
                 width = 25,
@@ -90,7 +91,7 @@ seqEff_by_oneback_port <- ggplot(data = summaryData2 %>%
   stat_summary(fun = "mean", geom = "point", size = 1.5) +
   stat_summary(fun = "mean", geom = "line", linewidth = 3.9, aes(group=condition)) +
   stat_summary(fun.data = "mean_cl_boot", linewidth = 3.7, width = 0.1, geom = "errorbar") + 
-  labs(title = "Experimento 2: efeitos sequenciais",
+  labs(title = "Experimento 1: efeitos sequenciais",
        x = expression("FP"[n]*" (s)"),
        y = "TR médio (s)",
        color = "Condição") +
@@ -110,15 +111,14 @@ seqEff_by_oneback_port <- ggplot(data = summaryData2 %>%
         legend.box.spacing = unit(0, "pt"),
         legend.margin = margin(5.5, 5.5, 5.5, 1)) +
   facet_wrap(~oneBackFP,
-             labeller = as_labeller(c(`1` = "FP[n-1] == 1.0",
-                                      `1.6` = "FP[n-1] == 1.6",
-                                      `2.2` = "FP[n-1] == 2.2",
-                                      `2.8` = "FP[n-1] == 2.8"),
+             labeller = as_labeller(c(`0.6` = "FP[n-1] == 0.6",
+                                      `1.2` = "FP[n-1] == 1.2",
+                                      `1.8` = "FP[n-1] == 1.8"),
                                     default = label_parsed)) +
   scale_color_manual(values = c("orange", "blue"), labels = c("Externa", "Ação"))
 
 # Save
-ggplot2::ggsave("./Analysis/Plots/seqEffs_exp2_port.tiff",
+ggplot2::ggsave("./Analysis/Plots/seqEffs_exp1_port.tiff",
                 seqEff_by_oneback_port,
                 width = 35,
                 height = 23.32,

@@ -59,6 +59,9 @@ data$numOneBackFP <- as.numeric(as.character(data$oneBackFP))
 # Quadratic term for numForeperiod
 data$squaredNumForeperiod <- data$numForeperiod^2
 
+# Create exponential of -foreperiod to account for non-linearity
+data$expFP <- exp(-data$numForeperiod)
+
 # Remove practice trials
 data <- data %>%
   filter(condition != 'practice')
@@ -216,7 +219,7 @@ dataAcc$squaredScaledNumOneBackFPDiff = dataAcc$scaledNumOneBackFPDiff^2
 
 # Average data
 summaryData <- data %>%
-  group_by(ID,foreperiod,logFP,condition,
+  group_by(ID,foreperiod,logFP,expFP,condition,
            orientation,prevOri,seqOri,
            oneBackFP,twoBackFP,oneBackFPDiff,prevFPLonger,
            block,counterbalance, testPos) %>%
@@ -242,7 +245,7 @@ summaryData <- data %>%
          squaredScaledNumOneBackFPDiff = scaledNumOneBackFPDiff^2)
 
 summaryData2 <- data2 %>%
-  group_by(ID,foreperiod,logFP,condition,
+  group_by(ID,foreperiod,logFP,expFP,condition,
            orientation,prevOri,seqOri,
            oneBackFP,twoBackFP,oneBackFPDiff,prevFPLonger,
            block,counterbalance, testPos) %>%
@@ -285,7 +288,8 @@ summaryDataAcc <- dataAcc %>%
          squaredScaledNumForeperiod = scaledNumForeperiod^2,
          scaledNumOneBackFP = scale(numOneBackFP)[,1])
 
-#write_csv(data, "./Analysis/data.csv")
-#write_csv(data2, "./Analysis/data2.csv")
-#write_csv(summaryData, "./Analysis/summaryData.csv")
-#write_csv(summaryData2, "./Analysis/summaryData2.csv")
+# write_csv(data, "./Analysis/data.csv")
+# write_csv(data2, "./Analysis/data2.csv")
+# write_csv(summaryData, "./Analysis/summaryData.csv")
+# write_csv(summaryData2, "./Analysis/summaryData2.csv")
+# save(data2, file = "./Analysis/data2.Rdata")
