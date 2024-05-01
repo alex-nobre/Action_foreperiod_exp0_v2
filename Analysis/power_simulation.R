@@ -100,14 +100,14 @@ load("./Analysis/data2.Rdata")
 
 # Usamos os betas do exp 2 pra construir um modelo no simr
 
-betas <- readRDS("./Analysis/trimlogfplmm.RDS")
+betas <- readRDS("./Analysis/fplmm.rds")
 
 inter_beta <- summary(betas)$coefficients |>
   as.data.frame() |>
   rownames_to_column() |>
   rename(coefficient = rowname) |>
   as_tibble() |>
-  filter(coefficient == "scaledNumForeperiod:condition1") |>
+  filter(coefficient == "foreperiod.L:condition1") |>
   pull(Estimate)
 
 inter_beta_sd <- summary(betas)$coefficients |>
@@ -115,7 +115,7 @@ inter_beta_sd <- summary(betas)$coefficients |>
   rownames_to_column() |>
   rename(coefficient = rowname) |>
   as_tibble() |>
-  filter(coefficient == "scaledNumForeperiod:condition1") |>
+  filter(coefficient == "foreperiod.L:condition1") |>
   rename(std_error = "Std. Error") |>
   mutate(std_dev = std_error*sqrt(summary(betas)$ngrps)) |>
   pull(std_dev) 
@@ -123,48 +123,66 @@ inter_beta_sd <- summary(betas)$coefficients |>
 
 
 # rodar n simulações e calcular a porcentagem que fica significativa.
-
-
 # Com isso, pegamos o valor do beta que é detectável 80% das vezes.
-
-
 
 # variamos o valor dos betas, e fazemos como eles recomendam no artigo
 n_betas <- 20
-betas_sim <- rnorm(n_betas, inter_beta, 3*inter_beta_sd)
-low_beta <- -0.01 #min(betas_sim)
+#betas_sim <- rnorm(n_betas, inter_beta, 3*inter_beta_sd)
+low_beta <- 0 #-0.01 #min(betas_sim)
 high_beta <- 0.01 #max(betas_sim)
 
 betas_sim <- seq(low_beta, high_beta, length.out = n_betas)
 
 # Simulate for each beta
-n_sim <- 1000
+n_sim <- 10#1000
 
-pvals_list <- vector(mode = "list", length = n_betas)
 
 # Function to simulate
 simulate_beta <- function(eff_size) {
   model <- betas
-  fixef(model)["scaledNumForeperiod:condition1"] <- eff_size
-  sim <- powerSim(model, nsim = n_sim, test = fixed("scaledNumForeperiod:condition1", "z"))
+  fixef(model)["foreperiod.L:condition1"] <- eff_size
+  sim <- powerSim(model, nsim = n_sim, test = fixed("foreperiod.L:condition1", "z"))
   sim_pvalues <- sim$pval
 }
 
 pvals_list <- lapply(betas_sim, simulate_beta)
 
-# for(eff_size in 1:n_betas) {
-#   model <- betas
-#   fixef(model)["scaledNumForeperiod:condition1"] <- betas_sim[eff_size]
-#   
-#   sim <- powerSim(model, nsim = n_sim, test = fcompare(logRT ~ scaledNumForeperiod:condition))
-#     
-#   sim_pvalues <- sim$pval
-#   pvals_list[[eff_size]] <- sim_pvalues 
-# }
 
-save(pvals_list, file = "./Analysis/pvals_list_1000sim_20betas.Rdata")
+load(file = "./Analysis/pvals_list_1000sim_20betas_positive.Rdata")
 power <- sapply(pvals_list, function(x) sum(x < 0.05)/length(x))
 names(power) <- round(betas_sim,4)
+
+plot(round(betas_sim,4), power,
+     xlab = "beta value",
+     ylab = "power")
+lines(round(betas_sim,4), power)
+abline(v = inter_beta, lty = "dashed")
+abline(h = 0.8)
+
+# function to convert rts to ms
+10^betas_sim
+
+
+xtabs(logRT ~ scaledNumForeperiod, data2)
+xtabs(RT ~ foreperiod, data2)
+
+mean(data2$RT)
+
+by(data2$RT, data2$foreperiod, mean)
+by(data2$logRT, data2$foreperiod, mean)
+by(data2$logRT, data2$scaledNumForeperiod, mean)
+
+
+data3 <- data2 |>
+  mutate(scaledNumForeperiod = round(scaledNumForeperiod,4))
+
+mean(data2[data2$numForeperiod==1,]$logRT) - mean(data2[data2$numForeperiod==1.6,]$logRT)
+mean(data3[data3$scaledNumForeperiod==-0.9091,]$logRT) - mean(data3[data3$scaledNumForeperiod==0.8909,]$logRT)
+
+summary(betas)$coefficients # change in 1 in FP = change of -0.008 in logRT
+
+10^(-0.395-0.0081797726)
+10^-0.0081797726
 
 
 #============= Build model without data ==================
