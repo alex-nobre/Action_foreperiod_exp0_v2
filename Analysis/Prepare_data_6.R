@@ -142,6 +142,9 @@ data <- data %>%
   filter(RT > 0.15)
 ntrials_after_extrem <- nrow(data)
 
+# Percentage excluded by extreme values removal
+((ntrials_before_extrem - ntrials_after_extrem)/ntrials_before_extrem)*100
+
 # Transform RT to reduce skew
 data$logRT <- ifelse(!is.na(data$RT), log10(data$RT), NA) # log-transform
 data$invRT <- ifelse(!is.na(data$RT), 1/data$RT, NA)
@@ -160,6 +163,7 @@ data2 <- data %>%
   filter(abs(logRTzscore) < 3) %>%
   ungroup()
 
+
 # No trimming
 data <- data %>%
   group_by(ID) %>%
@@ -167,6 +171,24 @@ data <- data %>%
          logRTzscore=ifelse(!is.na(RT), compute_zscore(logRT), NA)) %>%
   #filter(abs(logRTzscore) < 3) %>%
   ungroup()
+
+# Percentage excluded by trimming
+((nrow(data)-nrow(data2))/nrow(data))*100
+
+# by participants
+ntrials_by_part <- data |>
+  group_by(ID) |>
+  summarise(ntrials = n())
+
+ntrials2_by_part <- data2 |>
+  group_by(ID) |>
+  summarise(ntrials2 = n())
+
+ntrials12_by_part <- inner_join(ntrials_by_part, ntrials2_by_part) |>
+  mutate(percent_removed = ((ntrials-ntrials2)/ntrials)*100) |>
+  summarise(mean_removed = mean(percent_removed),
+            sd_removed = sd(percent_removed))
+
 
 # Create scaled predictors
 data$scaledNumForeperiod <- scale(data$numForeperiod, scale = FALSE)[,1]
