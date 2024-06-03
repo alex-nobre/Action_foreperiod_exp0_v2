@@ -1,19 +1,17 @@
-#================================================================================================================#
-# Changes:
 
-# To choose the dependent variable, we fit models using only random intercepts instead of the full
-# random-effects structure, as suggested by Salet et al. (2022) in their model structure Rmd
-# Removed old code in settings contrasts section
-#================================================================================================================#
 
 # Load packages
 
-# Data processing and plotting
+# Data processing
 library(magrittr)
 library(tidyverse)
+
+# Plotting
 library(lattice)
 library(gridExtra)
 library(data.table)
+library(extrafont)
+library(egg)
 
 # Simple models
 library(car)
@@ -47,13 +45,18 @@ library(prediction)
 graphical_defaults <- par()
 options_defaults <- options()
 
+# Load fonts from extrafonts
+loadfonts()
+
+# Prepare data 
+source('./Analysis/Prepare_data_6.R')
+
+# Prepare theme for plots
+source("./Analysis/plot_theme.R")
+theme_set(mytheme)
+
 # emm options
 emm_options(lmer.df = "satterthwaite", lmerTest.limit = 12000)
-
-
-#================================== 0. Read data ================================
-# Create dataset
-source('./Analysis/Prepare_data_6.R')
 
 
 #==========================================================================================#
@@ -212,13 +215,36 @@ fplmm <- mixed(formula = logRT ~ 1 + foreperiod + condition + foreperiod:conditi
                REML=TRUE,
                return = "merMod")
 
+isSingular(fplmm)
+
+#============ Model for sensitivity analysis ===========
+contrasts(data2$foreperiod, how.many = 1) <- contr.poly(4)
+contrasts(data2$condition) <- contr.sum(2)
+contrasts(data2$oneBackFP) <- contr.sum(4)
+
+fplmm <- mixed(formula = logRT ~ 1 + foreperiod + condition + foreperiod:condition + oneBackFP + 
+                 foreperiod:oneBackFP + condition:oneBackFP + foreperiod:condition:oneBackFP + 
+                 (1 + condition | ID),
+               data=data2,
+               control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
+               progress = TRUE,
+               expand_re = FALSE,
+               method =  'KR',
+               REML=TRUE,
+               return = "merMod",
+               check_contrasts = FALSE)
+
+summary(fplmm)
+
+saveRDS(fplmm, "./Analysis/fplmm.rds")
+
+
 #==============================================================================================#
 #==================================== 3. Model assessment ======================================
 #==============================================================================================#
 
-#========================= 3.3. Both FP and FP n-1 as categorical ===================================
 
-#=============== 3.3.1. using logRT =========================
+#=========== 3.1. Omnibus anova =================
 anova(fplmm)
 
 
@@ -242,7 +268,7 @@ contrast(cond_emm, interaction = c("poly"), adjust = "holm", max.degree = 1)
 fp_onebackfp_emm <- emmeans(fplmm, ~ oneBackFP|foreperiod)
 contrast(fp_onebackfp_emm, interaction = c("consec"), adjust = "holm")
 
-fp_onebackfp_emm <- emmeans(fplmm, ~ foreperiod|oneBackFP)
+fp_onebackfp_emm <- emmeans(fplmm, ~ foreperiod|oneBackFP, )
 contrast(fp_onebackfp_emm, interaction = c("poly"), adjust = "holm", max.degree = 1)
 
 #========== 3.3 Three-way interaction =========
@@ -281,29 +307,6 @@ contrast(fpemm, interaction = c("poly"), adjust = "holm", max.degree = 1)
 # Now test difference of FP fits between conditions, separately for each level of FPn-1
 fpemm <- emmeans(fplmm, ~ foreperiod*condition|oneBackFP)
 contrast(fpemm, interaction = c("poly", "pairwise"), adjust = "holm", max.degree = 1)
-
-
-# Model for power analysis
-contrasts(data2$foreperiod, how.many = 1) <- contr.poly(4)
-contrasts(data2$condition) <- contr.sum(2)
-contrasts(data2$oneBackFP) <- contr.sum(4)
-
-fplmm <- mixed(formula = logRT ~ 1 + foreperiod + condition + foreperiod:condition + oneBackFP + 
-                 foreperiod:oneBackFP + condition:oneBackFP + foreperiod:condition:oneBackFP + 
-                 (1 + condition | ID),
-               data=data2,
-               control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-               progress = TRUE,
-               expand_re = FALSE,
-               method =  'KR',
-               REML=TRUE,
-               return = "merMod",
-               check_contrasts = FALSE)
-
-summary(fplmm)
-
-saveRDS(fplmm, "./Analysis/fplmm.rds")
-
 
 
 #==============================================================================================#
@@ -831,18 +834,20 @@ anova(trimprevfplonglmm1)
 #===================================== 8. Accuracy ==============================================
 #===============================================================================================#
 
-fpaccglmm <- mixed(formula = error_result ~ 1 + foreperiod:condition + foreperiod + condition + 
-                     (1 | ID),
-                    data=dataAcc,
-                    family = binomial(link = "logit"),
-                    control = glmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5)),
-                    progress = TRUE,
-                    expand_re = FALSE,
-                    method = "LRT")
+fpaccglmm <- mixed(formula = error_result ~ 1 + foreperiod:condition:oneBackFP + foreperiod + 
+                     condition + oneBackFP + foreperiod:condition + foreperiod:oneBackFP + 
+                     condition:oneBackFP + (1|ID),
+                   data=dataAcc,
+                   family = binomial(link = "logit"),
+                   control = glmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5)),
+                   progress = TRUE,
+                   expand_re = FALSE,
+                   method = "LRT")
 
+isSingular(fpaccglmm)
 anova(fpaccglmm)
 
-#========== 3.2. Two-way interactions ==========
+#========== 8.2. Two-way interactions ==========
 # Compare difference between conditions within each level of FPn
 fp_cond_acc_emm <- emmeans(fpaccglmm, ~ condition|foreperiod)
 contrast(fp_cond_acc_emm, interaction = c("pairwise"), adjust = "holm")
@@ -854,6 +859,17 @@ contrast(fp_cond_acc_emm, interaction = c("poly"), adjust = "holm", max.degree =
 # Compare FP effect between conditions
 fp_cond_acc_emm <- emmeans(fpaccglmm, ~ foreperiod*condition)
 contrast(fp_cond_acc_emm, interaction = c("poly"), adjust = "holm", max.degree = 1)
+
+
+#========== 8.3. Three-way interactions ==========
+# Test significance of FP linear fits separately for each level of FPn-1 and each condition
+fp_acc_emm <- emmeans(fpaccglmm, ~ foreperiod|oneBackFP*condition)
+contrast(fp_acc_emm, interaction = c("poly"), adjust = "holm", max.degree = 1)
+
+
+# Now test difference of FP fits between conditions, separately for each level of FPn-1
+fp_acc_emm <- emmeans(fpaccglmm, ~ foreperiod*condition|oneBackFP)
+contrast(fp_acc_emm, interaction = c("poly", "pairwise"), adjust = "holm", max.degree = 1)
 
 #===============================================================================================#
 #============================= 9. Analyses using exp(-foreperiod) ==============================

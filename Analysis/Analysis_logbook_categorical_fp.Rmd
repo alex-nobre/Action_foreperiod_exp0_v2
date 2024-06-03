@@ -322,15 +322,14 @@ O modelo linear misto se comporta melhor que o modelo generalizado de acordo com
 # 4. Find maximal converging structure for error analysis
 
 ```{r Find glmm maximal converging structure for errors}
-fpaccglmm <- buildmer(error_result ~ foreperiod * condition + 
-                         (1+foreperiod*condition|ID), 
+fpaccglmm <- buildmer(error_result ~ foreperiod * condition * oneBackFP + 
+                         (1+foreperiod*condition*oneBackFP|ID), 
                        data=dataAcc,
                        family = binomial(link = "logit"),
                        buildmerControl = buildmerControl(calc.anova = TRUE, ddf = "Satterthwaite",
-                                                         include = ~ foreperiod:condition))
+                                                         include = ~ foreperiod:condition:oneBackFP))
 
 
-isSingular(fpaccglmm)
 formula(fpaccglmm)
 ```
 

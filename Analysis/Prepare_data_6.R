@@ -1,22 +1,4 @@
 
-#==============================================================================#
-# Changes
-# Replaced column for FP n-1 diff, since it will be used as a continuous variable
-# now
-
-# Use RT in ms instead of s, so that logRT does not assume negative values
-# log of predictors is now log10 instead of log2
-
-# Created columns for quadratic trend for FP and difference between
-# FP and FP n-1
-# Created column for previous orientation and renamed column for comparison
-# between current and previous orientation
-# Created column for trial number
-
-# Create separate columns for logFP as numerical and categorical
-
-# Create column for scaled predictors
-#==============================================================================#
 
 # Load necessary packages
 library(readr)
