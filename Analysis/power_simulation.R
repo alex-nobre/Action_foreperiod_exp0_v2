@@ -134,7 +134,7 @@ high_beta <- 0.01 #max(betas_sim)
 betas_sim <- seq(low_beta, high_beta, length.out = n_betas)
 
 # Simulate for each beta
-n_sim <- 1000
+n_sim <- 10#1000
 
 
 # Function to simulate
